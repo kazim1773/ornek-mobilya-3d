@@ -117,15 +117,17 @@
     position: absolute; transform: translate(-50%, -100%); pointer-events: none; white-space: nowrap;
     background: var(--tag-bg); color: var(--tag-fg); font-size: 12px; padding: 4px 8px; border-radius: 6px;
   }
-  #uyari {
+  #uyari, #konfUyari {
     position: absolute; top: 56px; left: 50%; transform: translateX(-50%); background: var(--toast-bg); color: var(--toast-fg);
     padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20;
   }
-  #uyari.goster { opacity: 1; }
-  #uyari.bilgi { background: var(--accent); color: var(--panel); }
+  #uyari.goster, #konfUyari.goster { opacity: 1; }
+  #uyari.bilgi, #konfUyari.bilgi { background: var(--tag-bg); color: var(--tag-fg); }
   /* Bir web sitesinin içine gömülüyken firma başlığı sitede zaten var */
   body.gomulu aside > header { display: none; }
   #sepeteEkle { width: 100%; margin-top: 12px; }
+  /* Mağazanın "Kendin tasarla" sekmesi (?mod=tasarla): yalnızca konfigüratör görünür */
+  body.tasarla-modu > aside, body.tasarla-modu > main { display: none; }
   #yukleniyor {
     position: absolute; inset: 0; display: grid; place-items: center; background: var(--scene); color: var(--muted);
     font-size: 14px; z-index: 30;
@@ -151,14 +153,96 @@
   .foto-kutu p { margin: 0; font-size: 13px; color: var(--muted); }
   .foto-kutu .butonlar { margin: 0; justify-content: flex-end; }
 
+  /* Kendin tasarla: ölçüye özel dolap konfigüratörü. Solda 3D önizleme, sağda adım paneli, altta canlı fiyat */
+  .katalog .urun.ozel { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; border: 1px dashed var(--accent); }
+  .urun.ozel img { width: 96px; flex: none; margin: 0; }
+  #konf {
+    position: fixed; inset: 0; z-index: 40; display: grid; background: var(--bg);
+    grid-template-columns: minmax(0, 1fr) 390px; grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .konf-ust { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .konf-ust b { font-size: 16px; white-space: nowrap; }
+  .konf-ust .alt { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .adimlar { flex: 1; min-width: 0; display: flex; justify-content: center; gap: 2px; overflow-x: auto; }
+  .adim {
+    flex: none; padding: 9px 10px; border: 0; border-bottom: 2px solid transparent; background: none;
+    font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; white-space: nowrap;
+  }
+  .adim i {
+    display: inline-grid; place-items: center; width: 19px; height: 19px; margin-right: 6px; border-radius: 50%;
+    background: var(--line); color: var(--ink); font-size: 11px; font-style: normal;
+  }
+  .adim.aktif { color: var(--ink); font-weight: 600; border-color: var(--accent); }
+  .adim.aktif i { background: var(--accent); color: var(--panel); }
+  .adim:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  #konfSahne { position: relative; min-width: 0; min-height: 0; background: var(--scene); }
+  #konfSahne canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .konf-gorus { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
+  .konf-gorus .btn { pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .olcu-etiket {
+    position: absolute; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap;
+    padding: 2px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink);
+    font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .konf-panel { overflow-y: auto; padding: 18px 20px 24px; background: var(--panel); border-left: 1px solid var(--line); }
+  .konf-panel h3 { margin: 0 0 4px; font-size: 17px; }
+  .konf-panel h4 { margin: 18px 0 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .konf-panel .aciklama { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .secenekler { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .secenek {
+    display: flex; gap: 10px; align-items: center; padding: 10px; text-align: left; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--field); font: inherit; color: inherit;
+  }
+  .secenek svg { flex: none; }
+  .secenek b { display: block; font-size: 13px; }
+  .secenek span { display: block; font-size: 12px; color: var(--muted); }
+  .secenek:hover:not(:disabled) { border-color: var(--accent); }
+  .secenek.secili { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+  .secenek:disabled { opacity: 0.5; cursor: not-allowed; }
+  .secenek:focus-visible, .dekor:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .olcu-kutu { margin-top: 14px; }
+  .olcu-kutu .ust { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .olcu-kutu .ust label { color: var(--ink); font-weight: 600; font-size: 13px; }
+  .olcu-satir { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+  .olcu-satir input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  .olcu-satir input[type=number] { width: 84px; margin: 0; }
+  .cipler { display: flex; gap: 6px; flex-wrap: wrap; }
+  .dekorlar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .dekor {
+    aspect-ratio: 1; padding: 0; border: 2px solid var(--panel); border-radius: 10px; cursor: pointer;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+  .dekor.secili { box-shadow: 0 0 0 2px var(--accent); }
+  .dekor:disabled { opacity: 0.35; cursor: not-allowed; }
+  .dekor-ad { margin-top: 6px; font-size: 12px; color: var(--muted); }
+  .not { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+  .not.hata { color: var(--danger); }
+  table.ozet { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.ozet td { padding: 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.ozet td:last-child { padding-left: 12px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.ozet tr.genel td { border: 0; padding-top: 10px; font-weight: 700; font-size: 15px; }
+  dl.ozellik { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
+  dl.ozellik dt { color: var(--muted); }
+  dl.ozellik dd { margin: 0; }
+  .konf-alt { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 16px; background: var(--panel); border-top: 1px solid var(--line); }
+  .konf-alt .fiyat { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .konf-alt .fiyat small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+  .konf-alt .ayir { flex: 1; }
+
   @media (max-width: 760px) {
     body { flex-direction: column-reverse; }
     aside { width: 100%; height: auto; flex: 1; border-right: 0; border-top: 1px solid var(--line); }
     main { height: 58vh; flex: none; }
     header, section, .kaynak { padding-left: 16px; padding-right: 16px; }
     .ipucu { display: none; }
+    #konf { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 40vh minmax(0, 1fr) auto; }
+    .konf-ust { flex-wrap: wrap; padding: 8px 16px 0; }
+    .konf-ust .alt { display: none; }
+    .adimlar { order: 3; flex-basis: 100%; justify-content: flex-start; }
+    .konf-panel { padding: 14px 16px 20px; border-left: 0; border-top: 1px solid var(--line); }
+    .konf-alt .fiyat { font-size: 18px; }
   }
-  @media (prefers-reduced-motion: reduce) { #uyari, .cubuk .dolu { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { #uyari, #konfUyari, .cubuk .dolu { transition: none; } }
 </style>
 <script type="importmap">
 { "imports": {
@@ -208,6 +292,7 @@
     <label class="aci">Açı <input type="range" id="aci" min="0" max="359" step="1"> <output id="aciDeger">0°</output></label>
     <div class="butonlar">
       <button class="btn ana" id="inceleAc">Elinde incele</button>
+      <button class="btn" id="duzenle" hidden>Tasarımı düzenle</button>
       <button class="btn" id="don15" title="Q / E">↻ 15°</button>
       <button class="btn" id="don90" title="R">↻ 90°</button>
       <button class="btn sil" id="sil" title="Delete">Kaldır</button>
@@ -275,6 +360,35 @@
 
   <div id="yukleniyor"><div>Mobilyalar yükleniyor… <span id="yuzde">0%</span><div class="cubuk"><div class="dolu" id="dolu"></div></div></div></div>
 </main>
+
+<div id="konf" hidden role="dialog" aria-modal="true" aria-labelledby="konfBaslik">
+  <div class="konf-ust">
+    <div><b id="konfBaslik">Dolabını tasarla</b> <span class="alt">· Ölçüye özel üretim</span></div>
+    <nav class="adimlar" id="adimlar" aria-label="Tasarım adımları"></nav>
+    <button class="btn" id="konfKapat">Kapat</button>
+  </div>
+  <div id="konfSahne">
+    <div class="konf-gorus">
+      <button class="btn aktif" data-gorus="3d">3D</button>
+      <button class="btn" data-gorus="on">Önden</button>
+      <button class="btn" data-gorus="ust">Üstten</button>
+      <button class="btn" id="kapakDugme">Kapakları aç</button>
+      <button class="btn aktif" id="olcuDugme" aria-pressed="true">Ölçüler</button>
+    </div>
+    <div id="olcuEtiketleri"></div>
+    <div id="konfUyari"></div>
+  </div>
+  <div class="konf-panel" id="konfPanel"></div>
+  <div class="konf-alt">
+    <div class="fiyat"><span id="konfFiyat">0 ₺</span><small>KDV ve montaj dahil · Üretim ve teslim 3–5 hafta</small></div>
+    <span class="ayir"></span>
+    <button class="btn" id="konfGeri">‹ Geri</button>
+    <button class="btn" id="konfIleri">İleri ›</button>
+    <button class="btn" id="taslakKaydet">Taslağı kaydet</button>
+    <button class="btn" id="konfSepet" hidden>Sepete ekle</button>
+    <button class="btn ana" id="odayaEkle">Odaya ekle</button>
+  </div>
+</div>
 
 <script type="module">
 import * as THREE from 'three';
@@ -716,18 +830,34 @@ function bosYerBul(it) {
   return null;
 }
 
+// Dolaplar duvara yaslanır: önce arka duvar, sonra sağ, ön ve pencereli sol duvar; olmazsa odadaki herhangi bir boş yer.
+// Açı, ürünün önünü (+z) odanın içine çevirir.
+function duvarYeriBul(it) {
+  const kenarlar = [[0, 0, -1], [Math.PI * 1.5, 1, 0], [Math.PI, 0, 1], [Math.PI / 2, -1, 0]];
+  for (const [r, nx, nz] of kenarlar) {
+    const yari = (nx ? oda.L : oda.W) / 2;
+    for (let s = 0; s <= yari + 1e-9; s += 0.05) for (const y of s ? [s, -s] : [0]) {
+      const [x, z] = sinirla(it, nx ? nx * 99 : y, nz ? nz * 99 : y, r);
+      if (uygunMu(it, x, z, r)) return [x, z, r];
+    }
+  }
+  return bosYerBul(it);
+}
+
 function urunEkle(def) {
   const it = esyaOlustur(def);
-  const yer = bosYerBul(it);
+  const yer = def.ozel ? duvarYeriBul(it) : bosYerBul(it);
   if (!yer) {
     scene.remove(it.grup);
     esyalar.pop();
-    return uyar(`${def.ad} için odada yeterli boş alan yok`);
+    uyar(`${def.ad} için odada yeterli boş alan yok`);
+    return false;
   }
   dondurAyarla(it, yer[2]);
   konum(it, yer[0], yer[1]);
   sec(it);
   listeGuncelle();
+  return true;
 }
 
 // ---------- Seçim görünümü: zemin çerçevesi ve döndürme halkası ----------
@@ -771,6 +901,7 @@ function sec(it) {
     it.halkaR = R;
     $('seciliAd').textContent = it.def.ad + ' · ' + fiyatYaz(it.def.fiyat);
     $('seciliOlcu').textContent = `${cm(it.def.g)} × ${cm(it.def.d)} × ${cm(it.def.y)} cm (G × D × Y)`;
+    $('duzenle').hidden = !it.def.ozel;
     const kap = $('seciliRenkler');
     kap.hidden = !it.def.renkler;
     if (it.def.renkler) renkleriCiz(kap, it.def.renkler, it.renk, c => { it.renk = c; it.mallar.forEach(m => m.color.set(c)); });
@@ -827,10 +958,11 @@ function listeGuncelle() {
 }
 
 let uyariZaman;
-function uyar(metin, bilgi = false) {
-  const u = $('uyari');
+// tur: 'hata' (varsayılan) ya da 'bilgi'. Konfigüratör açıksa uyarı onun sahnesinde görünür.
+function uyar(metin, tur = 'hata') {
+  const u = $('konf').hidden ? $('uyari') : $('konfUyari');
   u.textContent = metin;
-  u.classList.toggle('bilgi', bilgi);
+  u.classList.toggle('bilgi', tur === 'bilgi');
   u.classList.add('goster');
   clearTimeout(uyariZaman);
   uyariZaman = setTimeout(() => u.classList.remove('goster'), 2600);
@@ -1159,6 +1291,856 @@ $('fotoCek').onclick = fotografCek;
 $('fotoBitir').onclick = () => { fotoBitir = true; };
 $('fotoKapat').onclick = () => { $('foto').hidden = true; };
 
+// ---------- Kendin tasarla: ölçüye özel dolap konfigüratörü ----------
+// Adım adım ilerleyen sihirbaz: ölçüler → gövde → iç düzen → kapaklar → renk ve kulp → ekstralar → özet.
+// Girişler cm, sahne metre. Dolap her değişiklikte baştan üretilir, fiyat malzeme alanından yeniden hesaplanır.
+const DOLAP_SINIR = { W: [40, 400], H: [60, 260], D: [30, 70] };
+const BOLME_GEN = [30, 100]; // bir bölmenin izin verilen genişliği (cm)
+const ASKI_MIN_DERINLIK = 50; // askılı bölmeler için gereken gövde derinliği (cm)
+const HATLAR = [
+  { id: 'standart', ad: 'Standart', aciklama: '16 mm gövde, standart menteşe', kalinlik: 1.6, katsayi: 1 },
+  { id: 'premium', ad: 'Premium', aciklama: '19 mm gövde, frenli menteşe ve ray', kalinlik: 1.9, katsayi: 1.2 },
+  { id: 'luks', ad: 'Lüks', aciklama: '25 mm gövde, tam açılır sessiz ray', kalinlik: 2.5, katsayi: 1.45 },
+];
+const IC_DUZENLER = [
+  { id: 'raf', ad: 'Raflı', aciklama: 'Eşit aralıklı raflar' },
+  { id: 'aski', ad: 'Askılı', aciklama: 'Üst raf ve uzun askı' },
+  { id: 'askiRaf', ad: 'Askı ve raf', aciklama: 'Üstte askı, altta raf' },
+  { id: 'cekmece', ad: 'Çekmeceli', aciklama: 'Altta çekmece, üstte askı' },
+  { id: 'ciftAski', ad: 'Çift askı', aciklama: 'Gömlek ve ceket için' },
+  { id: 'bos', ad: 'Boş', aciklama: 'Yalnızca gövde' },
+];
+const KAPAK_TURLERI = [
+  { id: 'mentese', ad: 'Menteşeli', aciklama: 'Bölme başına bir ya da iki kapak' },
+  { id: 'surgu', ad: 'Sürgülü', aciklama: 'Açılırken yer kaplamaz' },
+  { id: 'acik', ad: 'Kapaksız', aciklama: 'Açık raf sistemi' },
+];
+const DEKORLAR = [
+  { id: 'beyaz', ad: 'Kar beyazı', renk: '#f1f0ec', katsayi: 1 },
+  { id: 'kasmir', ad: 'Kaşmir', renk: '#d8cdbd', katsayi: 1 },
+  { id: 'adacayi', ad: 'Adaçayı', renk: '#a3b09c', katsayi: 1.05 },
+  { id: 'gece', ad: 'Gece mavisi', renk: '#2f3d52', katsayi: 1.05 },
+  { id: 'antrasit', ad: 'Antrasit', renk: '#3a3d41', katsayi: 1.05 },
+  { id: 'akcaagac', ad: 'Akçaağaç', renk: '#e0c49b', ahsap: true, katsayi: 1.15 },
+  { id: 'mese', ad: 'Doğal meşe', renk: '#c39a68', ahsap: true, katsayi: 1.2 },
+  { id: 'fume', ad: 'Füme meşe', renk: '#6a5a4c', ahsap: true, katsayi: 1.25 },
+  { id: 'ceviz', ad: 'Ceviz', renk: '#7a5034', ahsap: true, katsayi: 1.3 },
+  { id: 'ayna', ad: 'Ayna', renk: '#cfd8dc', ayna: true, katsayi: 1.6, sadeceKapak: true },
+];
+const KULPLAR = [
+  { id: 'cubuk', ad: 'Çubuk', aciklama: 'Dikey metal tutamak', fiyat: 180 },
+  { id: 'dugme', ad: 'Düğme', aciklama: 'Küçük yuvarlak', fiyat: 120 },
+  { id: 'profil', ad: 'Profil', aciklama: 'Kenar boyunca ince şerit', fiyat: 220 },
+  { id: 'gizli', ad: 'Bas-aç', aciklama: 'Kulpsuz, dokununca açılır', fiyat: 260 },
+];
+const KULP_RENKLERI = [
+  { id: 'krom', ad: 'Krom', renk: '#c9ccd0', metal: 0.9 },
+  { id: 'siyah', ad: 'Mat siyah', renk: '#232323', metal: 0.3 },
+  { id: 'pirinc', ad: 'Fırçalı pirinç', renk: '#b8955a', metal: 0.85 },
+];
+// ₺; gövde ve kapak m² başına, ray ve baza metre başına, diğerleri adet başına
+const BIRIM_FIYAT = { govde: 650, kapak: 900, raf: 240, aski: 320, cekmece: 1450, ray: 950, baza: 380, led: 690, montaj: 1500 };
+const VARSAYILAN_DOLAP = {
+  W: 240, H: 220, D: 60, hat: 'premium', bolme: 4, ic: ['askiRaf', 'cekmece', 'raf', 'aski'],
+  kapak: 'mentese', surguSayi: 2, govdeDekor: 'beyaz', kapakDekor: 'mese', kulp: 'cubuk', kulpRenk: 'siyah', baza: true, led: false,
+};
+const TASLAK_ANAHTAR = 'oda-planlayici:dolap-taslagi';
+const TASARLA_MODU = new URLSearchParams(location.search).get('mod') === 'tasarla';
+const ADIMLAR = ['Ölçüler', 'Gövde', 'İç düzen', 'Kapaklar', 'Renk ve kulp', 'Ekstralar', 'Özet'];
+
+const bul = (liste, id) => liste.find(x => x.id === id);
+const dolapMaxH = () => Math.min(DOLAP_SINIR.H[1], Math.floor(oda.H * 100) - 2);
+function bolmeAraligi(W) {
+  const min = Math.max(1, Math.ceil(W / BOLME_GEN[1]));
+  return [min, Math.max(min, Math.floor(W / BOLME_GEN[0]))];
+}
+// Sürgülü kapak genişliği 50–120 cm arasında kalmalı
+function surguAraligi(W) {
+  const min = Math.max(2, Math.ceil(W / 120));
+  return [min, Math.max(min, Math.min(4, Math.floor(W / 50)))];
+}
+const onerilenBolme = W => { const [a, b] = bolmeAraligi(W); return Math.min(b, Math.max(a, Math.round(W / 60))); };
+
+// Eksik ya da sınır dışı değerleri düzeltir (taslaktan gelen eski kayıtlar dahil)
+function dolapDuzelt(k) {
+  const kenet = (v, a, b) => Math.min(b, Math.max(a, Math.round(+v || 0)));
+  for (const a in VARSAYILAN_DOLAP) if (k[a] === undefined) k[a] = structuredClone(VARSAYILAN_DOLAP[a]);
+  if (!bul(HATLAR, k.hat)) k.hat = VARSAYILAN_DOLAP.hat;
+  if (!bul(KAPAK_TURLERI, k.kapak)) k.kapak = VARSAYILAN_DOLAP.kapak;
+  if (!bul(KULPLAR, k.kulp)) k.kulp = VARSAYILAN_DOLAP.kulp;
+  if (!bul(KULP_RENKLERI, k.kulpRenk)) k.kulpRenk = VARSAYILAN_DOLAP.kulpRenk;
+  const gd = bul(DEKORLAR, k.govdeDekor);
+  if (!gd || gd.sadeceKapak) k.govdeDekor = VARSAYILAN_DOLAP.govdeDekor;
+  if (!bul(DEKORLAR, k.kapakDekor)) k.kapakDekor = VARSAYILAN_DOLAP.kapakDekor;
+  k.W = kenet(k.W, ...DOLAP_SINIR.W);
+  k.H = kenet(k.H, DOLAP_SINIR.H[0], dolapMaxH());
+  k.D = kenet(k.D, ...DOLAP_SINIR.D);
+  k.bolme = kenet(k.bolme, ...bolmeAraligi(k.W));
+  if (!Array.isArray(k.ic)) k.ic = [];
+  k.ic = k.ic.slice(0, k.bolme).map(d => (bul(IC_DUZENLER, d) ? d : 'raf'));
+  while (k.ic.length < k.bolme) k.ic.push(k.ic[k.ic.length - 1] || 'raf');
+  if (k.kapak === 'surgu' && k.W < 100) k.kapak = 'mentese';
+  if (k.kapak === 'acik' && bul(DEKORLAR, k.kapakDekor).ayna) k.kapakDekor = VARSAYILAN_DOLAP.kapakDekor;
+  k.surguSayi = kenet(k.surguSayi, ...surguAraligi(k.W));
+  k.baza = !!k.baza;
+  k.led = !!k.led;
+  return k;
+}
+
+// ---- Malzemeler: her dekor bir kez üretilir; önizleme ve odadaki kopyalar aynı malzemeyi paylaşır ----
+const DOKU_G = 0.6, DOKU_Y = 2.4; // ahşap dokusunun gerçekte kapladığı alan (metre)
+const malzemeOnbellek = new Map();
+function ahsapDokusu(renk) {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 1024;
+  const g = c.getContext('2d');
+  g.fillStyle = renk;
+  g.fillRect(0, 0, c.width, c.height);
+  // Dikey akan, hafif dalgalı damarlar. Dalga boyu tuval yüksekliğine tam bölünür ki doku dikişsiz tekrarlansın.
+  for (let i = 0; i < 160; i++) {
+    const x0 = Math.random() * c.width, koyu = Math.random() < 0.65;
+    const faz = Math.random() * TAM_TUR, genlik = 1 + Math.random() * 5, dalga = 1 + Math.floor(Math.random() * 3);
+    g.strokeStyle = koyu ? `rgba(45,25,10,${0.05 + Math.random() * 0.12})` : `rgba(255,240,220,${0.04 + Math.random() * 0.08})`;
+    g.lineWidth = 0.6 + Math.random() * 2.2;
+    for (const kay of [-c.width, 0, c.width]) {
+      g.beginPath();
+      for (let y = 0; y <= c.height; y += 16) {
+        const x = kay + x0 + Math.sin((y / c.height) * TAM_TUR * dalga + faz) * genlik;
+        if (y) g.lineTo(x, y); else g.moveTo(x, y);
+      }
+      g.stroke();
+    }
+  }
+  const tex = canvasDoku(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+function dekorMalzeme(id) {
+  const anahtar = 'dekor:' + id;
+  if (malzemeOnbellek.has(anahtar)) return malzemeOnbellek.get(anahtar);
+  const d = bul(DEKORLAR, id);
+  const m = d.ayna ? new THREE.MeshStandardMaterial({ color: '#e9eef0', metalness: 1, roughness: 0.04 })
+    : d.ahsap ? new THREE.MeshStandardMaterial({ map: ahsapDokusu(d.renk), roughness: 0.62 })
+    : new THREE.MeshStandardMaterial({ color: d.renk, roughness: 0.48 });
+  malzemeOnbellek.set(anahtar, m);
+  return m;
+}
+function metalMalzeme(id) {
+  const anahtar = 'metal:' + id;
+  if (malzemeOnbellek.has(anahtar)) return malzemeOnbellek.get(anahtar);
+  const r = bul(KULP_RENKLERI, id);
+  const m = new THREE.MeshStandardMaterial({ color: r.renk, metalness: r.metal, roughness: 0.32 });
+  malzemeOnbellek.set(anahtar, m);
+  return m;
+}
+const yarikMat = new THREE.MeshStandardMaterial({ color: '#1b1b1b', roughness: 1 });
+const ledMat = new THREE.MeshBasicMaterial({ color: '#fff1d6' });
+
+// Levha: UV'ler gerçek ölçüye göre ayarlanır, damar her yüzün uzun kenarı boyunca akar.
+// BoxGeometry yüz sırası: +x, -x, +y, -y, +z, -z (her yüz 4 köşe).
+function levha(grup, mat, sx, sy, sz, x, y, z) {
+  const geo = new THREE.BoxGeometry(sx, sy, sz);
+  const uv = geo.attributes.uv;
+  const yuzler = [[sz, sy], [sz, sy], [sx, sz], [sx, sz], [sx, sy], [sx, sy]];
+  yuzler.forEach(([du, dv], f) => {
+    for (let i = f * 4; i < f * 4 + 4; i++) {
+      const u = uv.getX(i), v = uv.getY(i);
+      if (du > dv) uv.setXY(i, (v * dv) / DOKU_G, (u * du) / DOKU_Y);
+      else uv.setXY(i, (u * du) / DOKU_G, (v * dv) / DOKU_Y);
+    }
+  });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  m.castShadow = m.receiveShadow = true;
+  grup.add(m);
+  return m;
+}
+
+// ---- Dolap üretici ----
+// Dönen: grup (taban y=0, önü +z), kapaklar (açıklık 0..1 alan fonksiyonlar), bölmeler ve fiyat için sayım.
+// secimli: konfigüratörde bölmeye tıklayıp seçmek için görünmez yakalama kutuları da eklenir.
+function dolapYap(k, secimli) {
+  const hat = bul(HATLAR, k.hat);
+  const W = k.W / 100, H = k.H / 100, D = k.D / 100, t = hat.kalinlik / 100;
+  const govde = dekorMalzeme(k.govdeDekor), on = dekorMalzeme(k.kapakDekor), kulpMat = metalMalzeme(k.kulpRenk), krom = metalMalzeme('krom');
+  const grup = new THREE.Group(), kapakGrup = new THREE.Group();
+  grup.add(kapakGrup);
+  const sayim = { govdeAlan: 0, kapakAlan: 0, raf: 0, aski: 0, cekmece: 0, kulp: 0, ray: 0 };
+  const alanEkle = (sx, sy, sz) => { const [a, b] = [sx, sy, sz].sort((p, q) => q - p); sayim.govdeAlan += a * b; };
+  const gp = (sx, sy, sz, x, y, z) => { alanEkle(sx, sy, sz); return levha(grup, govde, sx, sy, sz, x, y, z); };
+  const parca = (par, geo, mat, x, y, z, rx = 0, rz = 0) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    m.rotation.set(rx, 0, rz);
+    m.castShadow = true;
+    par.add(m);
+    return m;
+  };
+
+  const surgu = k.kapak === 'surgu';
+  const bazaH = k.baza ? 0.08 : 0;
+  // Gövde derinliği: menteşeli kapak gövdenin önüne biner, sürgülü kapak gövdenin içindeki raylarda kayar
+  const kapakPayi = k.kapak === 'mentese' ? t + 0.003 : surgu ? 0.075 : 0;
+  const Dg = D - kapakPayi, zA = -D / 2, zO = zA + Dg, zM = (zA + zO) / 2;
+  const n = k.bolme, bw = (W - 2 * t - (n - 1) * t) / n;
+  const ib = bazaH + t, it = H - t, ih = it - ib;
+
+  // Gövde: yanlar zemine iner, baza yanların arasında içeri çekik durur
+  const yanD = surgu ? D : Dg;
+  for (const s of [-1, 1]) gp(t, H, yanD, s * (W / 2 - t / 2), H / 2, zA + yanD / 2);
+  gp(W - 2 * t, t, Dg, 0, H - t / 2, zM);
+  gp(W - 2 * t, t, Dg, 0, bazaH + t / 2, zM);
+  levha(grup, govde, W - 2 * t, ih, 0.006, 0, ib + ih / 2, zA + 0.012);
+  sayim.govdeAlan += (W - 2 * t) * ih * 0.4; // arkalık ince levha, daha ucuz
+  if (k.baza) gp(W - 2 * t, bazaH, t, 0, bazaH / 2, (surgu ? D / 2 : zO) - 0.03 - t / 2);
+
+  const bolmeler = [];
+  for (let i = 0; i < n; i++) {
+    const x0 = -W / 2 + t + i * (bw + t);
+    bolmeler.push({ x0, x1: x0 + bw, xm: x0 + bw / 2 });
+    if (i > 0) gp(t, ih, Dg - 0.012, x0 - t / 2, ib + ih / 2, zM - 0.006);
+  }
+
+  // İç donanım
+  const rafD = Dg - 0.03;
+  const raf = (b, y) => { sayim.raf++; levha(grup, govde, bw - 0.002, t, rafD, b.xm, y, zM); };
+  const aski = (b, y) => {
+    sayim.aski++;
+    parca(grup, new THREE.CylinderGeometry(0.0125, 0.0125, bw - 0.004, 20), krom, b.xm, y, zM, 0, Math.PI / 2);
+  };
+  const cekmece = (b, y0, h) => {
+    sayim.cekmece++;
+    const mat = k.kapak === 'acik' ? on : govde;
+    levha(grup, mat, bw - 0.006, h - 0.006, t, b.xm, y0 + h / 2, zO - t / 2);
+    if (k.kapak !== 'acik') parca(grup, new THREE.BoxGeometry(Math.min(0.14, bw * 0.4), 0.012, 0.003), yarikMat, b.xm, y0 + h - 0.03, zO + 0.0005);
+    else onKulp(grup, b.xm, y0 + h - 0.045, zO, Math.min(0.16, bw * 0.4), true);
+  };
+  const ust = Math.min(0.3, ih * 0.22); // üst raf ile tavan arası
+  const esit = (b, y0, y1) => {
+    const m = Math.max(0, Math.round((y1 - y0) / 0.36) - 1);
+    for (let j = 1; j <= m; j++) raf(b, y0 + ((y1 - y0) * j) / (m + 1));
+  };
+  bolmeler.forEach((b, i) => {
+    let d = k.ic[i];
+    // Alçak dolaplarda iki katlı düzenler sığmaz; tek askıya düşülür
+    if ((d === 'askiRaf' || d === 'ciftAski') && ih < 1.5) d = 'aski';
+    if (d === 'raf') esit(b, ib, it);
+    else if (d === 'aski') {
+      if (ih > 1.1) { raf(b, it - ust); aski(b, it - ust - 0.07); } else aski(b, it - 0.07);
+    } else if (d === 'askiRaf') {
+      const ym = ib + Math.max(0.36, ih - ust - 1.05);
+      raf(b, it - ust); aski(b, it - ust - 0.07); raf(b, ym); esit(b, ib, ym);
+    } else if (d === 'cekmece') {
+      const adet = ih > 1.2 ? 3 : ih > 0.5 ? 2 : 1, ch = Math.min(0.18, ih / (adet + 1));
+      for (let j = 0; j < adet; j++) cekmece(b, ib + j * ch, ch);
+      const yc = ib + adet * ch + t / 2;
+      raf(b, yc);
+      if (it - yc > 0.9) { raf(b, it - ust); aski(b, it - ust - 0.07); } else esit(b, yc, it);
+    } else if (d === 'ciftAski') {
+      raf(b, it - ust); aski(b, it - ust - 0.07); aski(b, ib + (it - ust - ib) / 2);
+    }
+    if (k.led) parca(grup, new THREE.BoxGeometry(bw - 0.04, 0.006, 0.014), ledMat, b.xm, it - 0.005, zO - 0.035);
+    if (secimli) {
+      const kutu = new THREE.Mesh(new THREE.BoxGeometry(bw, ih, Dg), new THREE.MeshBasicMaterial());
+      kutu.position.set(b.xm, ib + ih / 2, zM);
+      kutu.visible = false;
+      kutu.userData.bolme = i;
+      grup.add(kutu);
+      b.kutu = kutu;
+    }
+  });
+
+  // Kapak ve çekmece kulpu. yatay: çekmecelerde yatay durur.
+  function onKulp(par, x, y, z, boy, yatay) {
+    sayim.kulp++;
+    if (k.kulp === 'gizli') return;
+    if (k.kulp === 'dugme') return parca(par, new THREE.SphereGeometry(0.015, 16, 12), kulpMat, x, y, z + 0.016);
+    if (k.kulp === 'profil') {
+      const geo = yatay ? new THREE.BoxGeometry(boy, 0.014, 0.014) : new THREE.BoxGeometry(0.014, boy, 0.014);
+      return parca(par, geo, kulpMat, x, y, z + 0.007);
+    }
+    const uz = yatay ? boy : 0.24;
+    parca(par, new THREE.CylinderGeometry(0.006, 0.006, uz, 14), kulpMat, x, y, z + 0.028, 0, yatay ? Math.PI / 2 : 0);
+    for (const s of [-1, 1]) {
+      const [ax, ay] = yatay ? [x + s * (uz / 2 - 0.02), y] : [x, y + s * (uz / 2 - 0.02)];
+      parca(par, new THREE.CylinderGeometry(0.004, 0.004, 0.028, 8), kulpMat, ax, ay, z + 0.014, Math.PI / 2);
+    }
+  }
+
+  const kapaklar = [];
+  if (k.kapak === 'mentese') {
+    const kh = H - bazaH - 0.004, ky = bazaH + 0.002 + kh / 2, kz = D / 2 - t;
+    // Kulp yaklaşık 105 cm yükseklikte; alçak dolaplarda kapağın üst kısmında
+    const kulpY = H < 1.3 ? kh / 2 - 0.12 : Math.min(kh / 2 - 0.12, Math.max(-kh / 2 + 0.12, 1.05 - ky));
+    bolmeler.forEach((b, i) => {
+      const sol = i === 0 ? -W / 2 : b.x0 - t / 2, sag = i === n - 1 ? W / 2 : b.x1 + t / 2, orta = (sol + sag) / 2;
+      // 62 cm'den geniş bölmeye çift kapak; tek kapaklarda komşular ortadan açılsın diye yön sırayla değişir
+      const parcalar = sag - sol > 0.62 ? [[sol, orta, -1], [orta, sag, 1]] : [[sol, sag, i % 2 ? 1 : -1]];
+      for (const [a, c, mentese] of parcalar) {
+        const kw = c - a - 0.003;
+        const pivot = new THREE.Group();
+        pivot.position.set(mentese < 0 ? a + 0.0015 : c - 0.0015, ky, kz);
+        levha(pivot, on, kw, kh, t, (-mentese * kw) / 2, 0, t / 2);
+        sayim.kapakAlan += kw * kh;
+        const kx = -mentese * (k.kulp === 'profil' ? kw - 0.007 : kw - 0.045);
+        onKulp(pivot, kx, k.kulp === 'profil' ? 0 : kulpY, t, kh, false);
+        kapakGrup.add(pivot);
+        // Sol menteşeli kapak -y yönünde, sağ menteşeli +y yönünde döner; ikisi de öne doğru açılır
+        kapaklar.push(acik => { pivot.rotation.y = mentese * acik * 1.75; });
+      }
+    });
+  } else if (surgu) {
+    const m = k.surguSayi, bindirme = 0.025, acikW = W - 2 * t;
+    const kw = (acikW + (m - 1) * bindirme) / m, kh = H - bazaH - 0.045 - 0.004, ky = bazaH + 0.02 + 0.002 + kh / 2;
+    gp(acikW, 0.025, kapakPayi, 0, H - 0.0125, zO + kapakPayi / 2);
+    gp(acikW, 0.02, kapakPayi, 0, bazaH + 0.01, zO + kapakPayi / 2);
+    sayim.ray = W;
+    for (let j = 0; j < m; j++) {
+      const ondeki = j % 2 === 1; // tek sıradaki kapaklar öndeki rayda kayar
+      const x0 = -W / 2 + t + j * (kw - bindirme) + kw / 2;
+      const g = new THREE.Group();
+      g.position.set(x0, ky, zO + (ondeki ? 0.052 : 0.022));
+      levha(g, on, kw, kh, 0.02, 0, 0, 0);
+      for (const s of [-1, 1]) parca(g, new THREE.BoxGeometry(0.012, kh, 0.026), kulpMat, s * (kw / 2 - 0.006), 0, 0);
+      sayim.kapakAlan += kw * kh;
+      kapakGrup.add(g);
+      // Açılınca öndeki kapak arkadaki komşusunun üzerine kayar
+      if (ondeki) kapaklar.push(acik => { g.position.x = x0 - acik * (kw - bindirme); });
+    }
+  }
+  return { grup, kapakGrup, kapaklar, bolmeler, sayim };
+}
+
+function fiyatHesapla(k, s) {
+  const hat = bul(HATLAR, k.hat), gd = bul(DEKORLAR, k.govdeDekor), kd = bul(DEKORLAR, k.kapakDekor), kulp = bul(KULPLAR, k.kulp);
+  const B = BIRIM_FIYAT;
+  const kalemler = [[`Gövde · ${gd.ad}, ${hat.ad}`, s.govdeAlan * B.govde * gd.katsayi * hat.katsayi]];
+  const ic = [s.raf && `${s.raf} raf`, s.aski && `${s.aski} askı`, s.cekmece && `${s.cekmece} çekmece`].filter(Boolean);
+  if (ic.length) kalemler.push([`İç donanım · ${ic.join(', ')}`, (s.raf * B.raf + s.aski * B.aski + s.cekmece * B.cekmece) * hat.katsayi]);
+  if (s.kapakAlan) kalemler.push([`Kapaklar · ${bul(KAPAK_TURLERI, k.kapak).ad}, ${kd.ad}`, s.kapakAlan * B.kapak * kd.katsayi * hat.katsayi]);
+  if (s.ray) kalemler.push(['Sürgü ray sistemi', s.ray * B.ray]);
+  if (s.kulp) kalemler.push([k.kulp === 'gizli' ? `Bas-aç mekanizması · ${s.kulp} adet` : `Kulplar · ${s.kulp} × ${kulp.ad}`, s.kulp * kulp.fiyat]);
+  if (k.baza) kalemler.push(['Baza', (k.W / 100) * B.baza]);
+  if (k.led) kalemler.push([`LED aydınlatma · ${k.bolme} bölme`, k.bolme * B.led]);
+  kalemler.push(['Teslimat ve montaj', B.montaj]);
+  for (const kl of kalemler) kl[1] = Math.round(kl[1] / 10) * 10;
+  return { kalemler, toplam: kalemler.reduce((t, kl) => t + kl[1], 0) };
+}
+
+// Kullanıcıyı uyaran ama tasarımı engellemeyen durumlar; her adım yalnızca kendisini ilgilendirenleri gösterir
+const ADIM_UYARILARI = { 0: ['derinlik', 'genislik', 'tavan'], 2: ['derinlik'], 3: ['derinlik'], 6: ['derinlik', 'genislik', 'tavan'] };
+function dolapUyarilari(k) {
+  const u = [];
+  const kapakPayi = k.kapak === 'mentese' ? bul(HATLAR, k.hat).kalinlik + 0.3 : k.kapak === 'surgu' ? 7.5 : 0;
+  const govdeD = Math.round(k.D - kapakPayi);
+  if (k.ic.some(d => d !== 'raf' && d !== 'bos') && govdeD < ASKI_MIN_DERINLIK)
+    u.push({ tur: 'derinlik', metin: `Askılı bölmeler için gövde derinliği en az ${ASKI_MIN_DERINLIK} cm olmalı; şu an ${govdeD} cm. Elbiseler kapağa sürtebilir.` });
+  if (k.W > Math.max(oda.W, oda.L) * 100)
+    u.push({ tur: 'genislik', metin: `Dolap, odanın en uzun duvarından (${cm(Math.max(oda.W, oda.L))} cm) geniş; odaya yerleştirilemez.` });
+  if (k.H >= dolapMaxH())
+    u.push({ tur: 'tavan', metin: `Dolap tavana (${cm(oda.H)} cm) çok yakın; montaj payı için birkaç cm kısaltmanız önerilir.` });
+  return u;
+}
+
+// Bölme düzeni simgesi (küçük çizim)
+function icSimge(id) {
+  const c = 'currentColor';
+  const raf = y => `<line x1="5" y1="${y}" x2="27" y2="${y}" stroke="${c}" stroke-width="1.6"/>`;
+  const aski = y => `<line x1="8" y1="${y}" x2="24" y2="${y}" stroke="${c}" stroke-width="1.4"/><path d="M12 ${y + 2} l-3 6 h14 l-3 -6" fill="none" stroke="${c}" stroke-width="1"/>`;
+  const cek = y => `<rect x="6" y="${y}" width="20" height="5" rx="1" fill="none" stroke="${c}" stroke-width="1.2"/>`;
+  const ic = {
+    raf: raf(13) + raf(22) + raf(31),
+    aski: raf(9) + aski(13),
+    askiRaf: raf(9) + aski(13) + raf(26) + raf(33),
+    cekmece: raf(9) + aski(13) + raf(25) + cek(27) + cek(33),
+    ciftAski: raf(9) + aski(12) + aski(25),
+    bos: '',
+  }[id];
+  return `<svg width="32" height="44" viewBox="0 0 32 44" aria-hidden="true"><rect x="3" y="3" width="26" height="38" rx="1.5" fill="none" stroke="${c}" stroke-width="1.6"/>${ic}</svg>`;
+}
+
+function dekorArkaplan(d) {
+  if (d.ayna) return 'linear-gradient(135deg, #f6f9fa, #b4c1c7 55%, #eef2f4)';
+  if (!d.ahsap) return d.renk;
+  const koyu = '#' + new THREE.Color(d.renk).multiplyScalar(0.78).getHexString();
+  return `repeating-linear-gradient(96deg, ${d.renk} 0 5px, ${koyu} 5px 6px, ${d.renk} 6px 10px, ${koyu} 10px 10.6px)`;
+}
+
+// ---- Konfigüratör ekranı ----
+const konf = {
+  r: null, sc: null, kam: null, kontrol: null, duvar: null, olcuGrup: null, vurgu: null,
+  k: null, dolap: null, fiyat: null, adim: 0, seciliBolme: 0, kapakAcik: false, kapakT: 0,
+  olcuGoster: true, olcuNoktalari: [], kamHedef: null, gorus: '3d', duzenlenen: null,
+};
+const azHareket = matchMedia('(prefers-reduced-motion: reduce)');
+
+function konfKur() {
+  if (konf.r) return;
+  const r = new THREE.WebGLRenderer({ antialias: true });
+  r.setPixelRatio(Math.min(devicePixelRatio, 2));
+  r.shadowMap.enabled = true;
+  r.shadowMap.type = THREE.PCFSoftShadowMap;
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  const kap = $('konfSahne');
+  kap.prepend(r.domElement);
+  const sc = new THREE.Scene();
+  const pm = new THREE.PMREMGenerator(r);
+  sc.environment = pm.fromScene(new RoomEnvironment(r), 0.04).texture;
+  sc.environmentIntensity = 0.75;
+  const isik = new THREE.DirectionalLight('#fff4e6', 2.2);
+  isik.position.set(2.5, 5, 4.5);
+  isik.castShadow = true;
+  isik.shadow.mapSize.set(2048, 2048);
+  isik.shadow.bias = -0.0005;
+  isik.shadow.normalBias = 0.02;
+  Object.assign(isik.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 0.5, far: 20 });
+  sc.add(isik, new THREE.HemisphereLight('#ffffff', '#b9a68c', 0.3));
+  // Gölge alan zemin ve arka duvar: dolabın bir odada durduğu hissi
+  const zemin = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.18 }));
+  zemin.rotation.x = -Math.PI / 2;
+  zemin.receiveShadow = true;
+  const duvar = new THREE.Mesh(new THREE.PlaneGeometry(30, 8), new THREE.MeshStandardMaterial({ roughness: 0.95 }));
+  duvar.position.y = 4;
+  duvar.receiveShadow = true;
+  sc.add(zemin, duvar);
+  const olcuGrup = new THREE.Group();
+  const vurgu = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.16, depthWrite: false }));
+  vurgu.renderOrder = 4;
+  sc.add(olcuGrup, vurgu);
+
+  const kam = new THREE.PerspectiveCamera(35, 1, 0.05, 60);
+  const kontrol = new OrbitControls(kam, r.domElement);
+  kontrol.enableDamping = true;
+  kontrol.maxPolarAngle = Math.PI / 2 - 0.02;
+  kontrol.minDistance = 0.8;
+  kontrol.maxDistance = 14;
+  kontrol.addEventListener('start', () => { konf.kamHedef = null; });
+  Object.assign(konf, { r, sc, kam, kontrol, duvar, olcuGrup, vurgu });
+
+  // Ölçü etiketleri (genişlik, yükseklik, derinlik)
+  for (let i = 0; i < 3; i++) {
+    const e = document.createElement('div');
+    e.className = 'olcu-etiket';
+    $('olcuEtiketleri').appendChild(e);
+  }
+  new ResizeObserver(konfBoyut).observe(kap);
+
+  // Sahnede bir bölmeye tıklamak onu seçer ve iç düzen adımına geçer
+  const el = r.domElement, isinK = new THREE.Raycaster();
+  let bas = null;
+  el.addEventListener('pointerdown', e => { bas = [e.clientX, e.clientY]; });
+  el.addEventListener('pointerup', e => {
+    const tik = bas && Math.hypot(e.clientX - bas[0], e.clientY - bas[1]) < 5;
+    bas = null;
+    if (!tik) return;
+    const rr = el.getBoundingClientRect();
+    isinK.setFromCamera(new THREE.Vector2(((e.clientX - rr.left) / rr.width) * 2 - 1, -((e.clientY - rr.top) / rr.height) * 2 + 1), kam);
+    const h = isinK.intersectObjects(konf.dolap.bolmeler.map(b => b.kutu), false)[0];
+    if (!h) return;
+    konf.seciliBolme = h.object.userData.bolme;
+    adimaGit(2);
+  });
+}
+
+function konfBoyut() {
+  const kap = $('konfSahne'), w = kap.clientWidth, h = kap.clientHeight;
+  if (!w || !h) return;
+  konf.r.setSize(w, h, false);
+  konf.kam.aspect = w / h;
+  konf.kam.updateProjectionMatrix();
+}
+
+function kameraGorus(g, hemen = false) {
+  konf.gorus = g;
+  document.querySelectorAll('[data-gorus]').forEach(b => b.classList.toggle('aktif', b.dataset.gorus === g));
+  const k = konf.k, W = k.W / 100, H = k.H / 100, D = k.D / 100;
+  const merkez = new THREE.Vector3(0, H / 2, 0);
+  // Dolap ve ölçü etiketleri kadrajın içinde kalsın; dar ekranda yatay sığdırma belirleyici olur
+  const yaricap = Math.hypot(W, H, D) / 2 + 0.2;
+  const yarim = THREE.MathUtils.degToRad(konf.kam.fov / 2);
+  const uzak = (yaricap / Math.sin(yarim)) * Math.max(1, 1 / konf.kam.aspect) * 1.05;
+  const yon = { '3d': [0.75, 0.35, 1], on: [0, 0.04, 1], ust: [0, 1, 0.03] }[g];
+  const p = merkez.clone().addScaledVector(new THREE.Vector3(...yon).normalize(), uzak);
+  konf.kamHedef = { p, t: merkez };
+  if (hemen || azHareket.matches) {
+    konf.kam.position.copy(p);
+    konf.kontrol.target.copy(merkez);
+    konf.kamHedef = null;
+  }
+}
+
+function olculeriCiz() {
+  const g = konf.olcuGrup, k = konf.k;
+  g.traverse(o => o.geometry && o.geometry.dispose());
+  g.clear();
+  const W = k.W / 100, H = k.H / 100, D = k.D / 100, a = 0.07, u = 0.022, y = 0.004;
+  const n = [];
+  const cizgi = (p, q, tik) => {
+    n.push(...p, ...q);
+    for (const x of [p, q]) n.push(x[0] + tik[0], x[1] + tik[1], x[2] + tik[2], x[0] - tik[0], x[1] - tik[1], x[2] - tik[2]);
+  };
+  cizgi([-W / 2, y, D / 2 + a], [W / 2, y, D / 2 + a], [0, 0, u]);
+  cizgi([W / 2 + a, 0, D / 2], [W / 2 + a, H, D / 2], [u, 0, 0]);
+  cizgi([W / 2 + a, y, -D / 2], [W / 2 + a, y, D / 2], [u, 0, 0]);
+  const vurguRengi = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1f6f5c';
+  const cizgiler = new THREE.LineSegments(
+    new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(n, 3)),
+    new THREE.LineBasicMaterial({ color: vurguRengi, depthTest: false })
+  );
+  cizgiler.renderOrder = 5;
+  g.add(cizgiler);
+  g.visible = konf.olcuGoster;
+  konf.vurgu.material.color.set(vurguRengi);
+  konf.olcuNoktalari = [
+    [new THREE.Vector3(0, y, D / 2 + a + 0.07), `Genişlik ${k.W} cm`],
+    [new THREE.Vector3(W / 2 + a + 0.06, H / 2, D / 2), `Yükseklik ${k.H} cm`],
+    [new THREE.Vector3(W / 2 + a + 0.08, y, 0), `Derinlik ${k.D} cm`],
+  ];
+}
+
+function vurguGuncelle() {
+  const b = konf.dolap.bolmeler[konf.seciliBolme];
+  konf.vurgu.visible = konf.adim === 2 && !!b;
+  if (!b) return;
+  konf.vurgu.geometry = b.kutu.geometry;
+  konf.vurgu.position.copy(b.kutu.position);
+}
+
+// İç düzen adımında içerisi görünsün: menteşeli kapaklar açılır, sürgülü kapaklar gizlenir
+const kapakHedef = () => (konf.kapakAcik || (konf.adim === 2 && konf.k.kapak === 'mentese') ? 1 : 0);
+function kapaklariUygula() {
+  konf.dolap.kapaklar.forEach(f => f(konf.kapakT));
+  konf.dolap.kapakGrup.visible = !(konf.adim === 2 && konf.k.kapak === 'surgu');
+}
+
+function dolapYenile(cercevele = false) {
+  const k = konf.k;
+  if (konf.dolap) {
+    konf.sc.remove(konf.dolap.grup);
+    konf.dolap.grup.traverse(o => o.geometry && o.geometry.dispose());
+  }
+  konf.dolap = dolapYap(k, true);
+  konf.sc.add(konf.dolap.grup);
+  konf.duvar.position.z = -k.D / 200 - 0.002;
+  if (konf.seciliBolme >= k.bolme) konf.seciliBolme = k.bolme - 1;
+  kapaklariUygula();
+  olculeriCiz();
+  vurguGuncelle();
+  konf.fiyat = fiyatHesapla(k, konf.dolap.sayim);
+  $('konfFiyat').textContent = fiyatYaz(konf.fiyat.toplam);
+  $('kapakDugme').hidden = k.kapak === 'acik';
+  if (cercevele) kameraGorus(konf.gorus);
+}
+
+function adimaGit(i) {
+  konf.adim = Math.max(0, Math.min(ADIMLAR.length - 1, i));
+  $('adimlar').querySelectorAll('.adim').forEach((b, j) => {
+    b.classList.toggle('aktif', j === konf.adim);
+    if (j === konf.adim) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+  });
+  $('konfGeri').disabled = konf.adim === 0;
+  $('konfIleri').hidden = konf.adim === ADIMLAR.length - 1;
+  kapaklariUygula();
+  vurguGuncelle();
+  adimCiz();
+  $('konfPanel').scrollTop = 0;
+}
+
+function secenekHtml(ayar, deger, secili, baslik, aciklama, ek = '', kapali = false) {
+  return `<button class="secenek${secili ? ' secili' : ''}" data-ayar="${ayar}" data-deger="${deger}" aria-pressed="${secili}"${kapali ? ' disabled' : ''}>${ek}<div><b>${baslik}</b><span>${aciklama}</span></div></button>`;
+}
+function dekorHtml(ayar, aktif, kapakMi) {
+  const d = bul(DEKORLAR, aktif);
+  return `<div class="dekorlar">${DEKORLAR.filter(x => kapakMi || !x.sadeceKapak).map(x => {
+    const kapali = x.ayna && konf.k.kapak === 'acik';
+    return `<button class="dekor${x.id === aktif ? ' secili' : ''}" data-ayar="${ayar}" data-deger="${x.id}" title="${x.ad}" aria-label="${x.ad}" aria-pressed="${x.id === aktif}" style="background:${dekorArkaplan(x)}"${kapali ? ' disabled' : ''}></button>`;
+  }).join('')}</div><div class="dekor-ad">Seçili: ${d.ad}${d.ahsap ? ' · ahşap dokulu' : d.ayna ? ' · gerçek ayna' : ' · ipek mat'}</div>`;
+}
+const notHtml = (metin, hata) => `<p class="not${hata ? ' hata' : ''}">${metin}</p>`;
+
+function adimCiz() {
+  const k = konf.k, p = $('konfPanel');
+  const uyarilar = dolapUyarilari(k);
+  let h;
+  if (konf.adim === 0) {
+    h = `<h3>Ölçülerini gir</h3><p class="aciklama">Dolabın dış ölçüleri. Nişi tavandan, ortadan ve zeminden ölçüp en küçüğünü yazın.</p>`;
+    for (const [a, ad, [mn, mx]] of [['W', 'Genişlik', DOLAP_SINIR.W], ['H', 'Yükseklik', [DOLAP_SINIR.H[0], dolapMaxH()]], ['D', 'Derinlik', DOLAP_SINIR.D]]) {
+      h += `<div class="olcu-kutu"><div class="ust"><label for="olcu-${a}">${ad}</label><span>${mn}–${mx} cm</span></div>
+        <div class="olcu-satir"><input type="range" data-olcu="${a}" min="${mn}" max="${mx}" step="1" value="${k[a]}" aria-label="${ad}">
+        <input type="number" id="olcu-${a}" data-olcu="${a}" min="${mn}" max="${mx}" step="1" value="${k[a]}"><span>cm</span></div></div>`;
+    }
+    h += notHtml(`Odanızın tavanı ${cm(oda.H)} cm; dolap en fazla ${dolapMaxH()} cm olabilir.`);
+  } else if (konf.adim === 1) {
+    const [bmin, bmax] = bolmeAraligi(k.W);
+    const bw = Math.round((k.W - (k.bolme + 1) * bul(HATLAR, k.hat).kalinlik) / k.bolme);
+    h = `<h3>Gövde</h3><p class="aciklama">Seri, levha kalınlığını ve donanım kalitesini belirler.</p>
+      <div class="secenekler">${HATLAR.map(x => secenekHtml('hat', x.id, x.id === k.hat, x.ad, x.aciklama)).join('')}</div>
+      <h4>Bölme sayısı</h4><div class="cipler">${Array.from({ length: bmax - bmin + 1 }, (_, i) => bmin + i).map(s =>
+        `<button class="btn${s === k.bolme ? ' aktif' : ''}" data-ayar="bolme" data-deger="${s}" aria-pressed="${s === k.bolme}">${s}</button>`).join('')}</div>
+      ${notHtml(`Bölme iç genişliği yaklaşık ${bw} cm (izin verilen ${BOLME_GEN[0]}–${BOLME_GEN[1]} cm).`)}
+      <h4>Gövde rengi</h4>${dekorHtml('govdeDekor', k.govdeDekor, false)}`;
+  } else if (konf.adim === 2) {
+    const s = konf.seciliBolme;
+    h = `<h3>İç düzen</h3><p class="aciklama">Her bölmeyi ayrı düzenleyin. Sahnede bir bölmeye tıklayarak da seçebilirsiniz.</p>
+      <div class="cipler">${k.ic.map((_, i) => `<button class="btn${i === s ? ' aktif' : ''}" data-ayar="bolmeSec" data-deger="${i}" aria-pressed="${i === s}">Bölme ${i + 1}</button>`).join('')}</div>
+      <h4>Bölme ${s + 1} düzeni</h4>
+      <div class="secenekler">${IC_DUZENLER.map(x => secenekHtml('ic', x.id, k.ic[s] === x.id, x.ad, x.aciklama, icSimge(x.id))).join('')}</div>
+      <div class="butonlar"><button class="btn" data-ayar="icTumu" data-deger="1">Bu düzeni tüm bölmelere uygula</button></div>`;
+    if (k.H < 150) h += notHtml('Dolap 150 cm\'den alçak: iki katlı düzenler tek askıya dönüştürülür.');
+  } else if (konf.adim === 3) {
+    const [smin, smax] = surguAraligi(k.W);
+    h = `<h3>Kapaklar</h3><p class="aciklama">Dar odalarda sürgülü kapak, açılma payı gerektirmez.</p>
+      <div class="secenekler">${KAPAK_TURLERI.map(x => {
+        const kapali = x.id === 'surgu' && k.W < 100;
+        return secenekHtml('kapak', x.id, x.id === k.kapak, x.ad, kapali ? 'En az 100 cm genişlik gerekir' : x.aciklama, '', kapali);
+      }).join('')}</div>`;
+    if (k.kapak === 'surgu') {
+      h += `<h4>Kapak sayısı</h4><div class="cipler">${Array.from({ length: smax - smin + 1 }, (_, i) => smin + i).map(s =>
+        `<button class="btn${s === k.surguSayi ? ' aktif' : ''}" data-ayar="surguSayi" data-deger="${s}" aria-pressed="${s === k.surguSayi}">${s} kapak</button>`).join('')}</div>`;
+      h += notHtml(`Kapak genişliği yaklaşık ${Math.round(k.W / k.surguSayi)} cm. Sürgü rayı dolap derinliğinden 7,5 cm kullanır.`);
+    } else if (k.kapak === 'mentese') {
+      h += notHtml(`${konf.dolap.kapaklar.length} kapak. 62 cm'den geniş bölmelere çift kapak takılır. Önünde en az kapak genişliği kadar açılma payı bırakın.`);
+    }
+  } else if (konf.adim === 4) {
+    const surgu = k.kapak === 'surgu';
+    h = `<h3>Renk ve kulp</h3><p class="aciklama">Gövde ve kapak rengini ayrı seçerek iki tonlu bir dolap yapabilirsiniz.</p>
+      <h4>${k.kapak === 'acik' ? 'Çekmece önü rengi' : 'Kapak rengi'}</h4>${dekorHtml('kapakDekor', k.kapakDekor, true)}
+      <h4>Kulp</h4><div class="secenekler">${KULPLAR.map(x => secenekHtml('kulp', x.id, x.id === k.kulp, x.ad, `${x.aciklama} · ${fiyatYaz(x.fiyat)}`, '', surgu)).join('')}</div>
+      ${surgu ? notHtml('Sürgülü kapaklarda tutamak, kapak kenarındaki profildir; yalnızca rengi seçilir.') : ''}
+      <h4>Kulp ve profil rengi</h4><div class="cipler">${KULP_RENKLERI.map(x =>
+        `<button class="btn${x.id === k.kulpRenk ? ' aktif' : ''}" data-ayar="kulpRenk" data-deger="${x.id}" aria-pressed="${x.id === k.kulpRenk}">${x.ad}</button>`).join('')}</div>`;
+  } else if (konf.adim === 5) {
+    h = `<h3>Ekstralar</h3><p class="aciklama">Montaj ve teslimat fiyata dahildir.</p>
+      <h4>Baza</h4><div class="secenekler">
+        ${secenekHtml('baza', 1, k.baza, 'Bazalı', '8 cm, içeri çekik; süpürgeliği aşar')}
+        ${secenekHtml('baza', 0, !k.baza, 'Bazasız', 'Gövde doğrudan zemine oturur')}</div>
+      <h4>Aydınlatma</h4><div class="secenekler">
+        ${secenekHtml('led', 1, k.led, 'LED şerit', `Her bölmede, kapak açılınca yanar · ${fiyatYaz(BIRIM_FIYAT.led)}/bölme`)}
+        ${secenekHtml('led', 0, !k.led, 'Aydınlatmasız', '')}</div>`;
+  } else {
+    const f = konf.fiyat;
+    const say = {};
+    k.ic.forEach(d => { say[d] = (say[d] || 0) + 1; });
+    const duzen = Object.entries(say).map(([d, s]) => `${s} × ${bul(IC_DUZENLER, d).ad.toLowerCase()}`).join(', ');
+    h = `<h3>Özet</h3><p class="aciklama">Tasarımınızı odaya ekleyip yerleşimini deneyin ya da taslak olarak kaydedin.</p>
+      <dl class="ozellik">
+        <dt>Ölçü</dt><dd>${k.W} × ${k.H} × ${k.D} cm (G × Y × D)</dd>
+        <dt>Seri</dt><dd>${bul(HATLAR, k.hat).ad}</dd>
+        <dt>Bölmeler</dt><dd>${k.bolme} bölme: ${duzen}</dd>
+        <dt>Kapak</dt><dd>${bul(KAPAK_TURLERI, k.kapak).ad}${k.kapak === 'surgu' ? ` (${k.surguSayi} kapak)` : ''}</dd>
+        <dt>Renkler</dt><dd>Gövde ${bul(DEKORLAR, k.govdeDekor).ad.toLowerCase()}, ön ${bul(DEKORLAR, k.kapakDekor).ad.toLowerCase()}</dd>
+        <dt>Kulp</dt><dd>${k.kapak === 'surgu' ? 'Kenar profili' : bul(KULPLAR, k.kulp).ad}, ${bul(KULP_RENKLERI, k.kulpRenk).ad.toLowerCase()}</dd>
+      </dl>
+      <h4>Fiyat dökümü</h4>
+      <table class="ozet">${f.kalemler.map(([a, t]) => `<tr><td>${a}</td><td>${fiyatYaz(t)}</td></tr>`).join('')}
+        <tr class="genel"><td>Toplam</td><td>${fiyatYaz(f.toplam)}</td></tr></table>
+      ${notHtml('Fiyatlar örnektir. Siparişten önce ölçüler ustamız tarafından yerinde kontrol edilir.')}`;
+  }
+  const turler = ADIM_UYARILARI[konf.adim] || [];
+  h += uyarilar.filter(u => turler.includes(u.tur)).map(u => notHtml(u.metin, true)).join('');
+  p.innerHTML = h;
+}
+
+function ayarla(ad, deger) {
+  const k = konf.k;
+  if (ad === 'bolmeSec') konf.seciliBolme = +deger;
+  else if (ad === 'ic') k.ic[konf.seciliBolme] = deger;
+  else if (ad === 'icTumu') k.ic.fill(k.ic[konf.seciliBolme]);
+  else if (ad === 'baza' || ad === 'led') k[ad] = deger === '1';
+  else if (ad === 'bolme' || ad === 'surguSayi') k[ad] = +deger;
+  else k[ad] = deger;
+  dolapDuzelt(k);
+  dolapYenile();
+  adimCiz();
+}
+
+// Ölçü girişi: kaydırıcı sürüklenirken dolap canlı güncellenir, panel yalnızca bırakınca yeniden çizilir
+function olcuDegisti(inp, bitti) {
+  const k = konf.k, a = inp.dataset.olcu, v = parseFloat(String(inp.value).replace(',', '.'));
+  if (!isFinite(v)) { if (bitti) adimCiz(); return; }
+  k[a] = v;
+  // Genişlik değişince bölme sayısı yaklaşık 60 cm'lik bölmelere göre yeniden önerilir
+  if (a === 'W') k.bolme = onerilenBolme(Math.min(DOLAP_SINIR.W[1], Math.max(DOLAP_SINIR.W[0], Math.round(v))));
+  dolapDuzelt(k);
+  $('konfPanel').querySelectorAll(`[data-olcu="${a}"]`).forEach(e => { if (e !== inp || bitti) e.value = k[a]; });
+  dolapYenile(true);
+  if (bitti) adimCiz();
+}
+
+function konfCiz() {
+  const hedef = kapakHedef();
+  if (konf.kapakT !== hedef) {
+    konf.kapakT = azHareket.matches || Math.abs(hedef - konf.kapakT) < 0.002 ? hedef : konf.kapakT + (hedef - konf.kapakT) * 0.14;
+    kapaklariUygula();
+  }
+  if (konf.kamHedef) {
+    konf.kam.position.lerp(konf.kamHedef.p, 0.14);
+    konf.kontrol.target.lerp(konf.kamHedef.t, 0.14);
+    if (konf.kam.position.distanceTo(konf.kamHedef.p) < 0.002) konf.kamHedef = null;
+  }
+  konf.kontrol.update();
+  konf.r.render(konf.sc, konf.kam);
+  const kap = $('konfSahne'), etiketler = $('olcuEtiketleri').children;
+  konf.olcuNoktalari.forEach(([p, metin], i) => {
+    const e = etiketler[i];
+    v.copy(p).project(konf.kam);
+    e.hidden = !konf.olcuGoster || v.z > 1;
+    e.textContent = metin;
+    e.style.left = ((v.x + 1) / 2) * kap.clientWidth + 'px';
+    e.style.top = ((1 - v.y) / 2) * kap.clientHeight + 'px';
+  });
+}
+
+function konfAc(k, duzenlenen = null) {
+  konfKur();
+  let taslak = null;
+  if (!k) {
+    try { taslak = JSON.parse(localStorage.getItem(TASLAK_ANAHTAR)); } catch (e) { taslak = null; }
+    if (!taslak || typeof taslak !== 'object') taslak = null;
+  }
+  konf.k = dolapDuzelt(structuredClone(k || taslak || VARSAYILAN_DOLAP));
+  Object.assign(konf, { duzenlenen, kapakAcik: false, kapakT: 0, seciliBolme: 0 });
+  $('konfBaslik').textContent = duzenlenen ? 'Dolabını düzenle' : 'Dolabını tasarla';
+  $('odayaEkle').textContent = duzenlenen ? 'Değişiklikleri uygula' : 'Odaya ekle';
+  $('kapakDugme').textContent = 'Kapakları aç';
+  konf.sc.background = scene.background.clone();
+  konf.duvar.material.color.set(oda.duvar);
+  $('konf').hidden = false;
+  renderer.setAnimationLoop(null);
+  konfBoyut();
+  dolapYenile();
+  adimaGit(0);
+  kameraGorus('3d', true);
+  konf.r.setAnimationLoop(konfCiz);
+  if (taslak) uyar('Kaydettiğiniz taslak yüklendi', 'bilgi');
+  $('konfIleri').focus();
+}
+
+function konfKapat() {
+  $('konf').hidden = true;
+  konf.r?.setAnimationLoop(null);
+  renderer.setAnimationLoop(ciz);
+}
+
+function ozelDolapDef(k) {
+  const d = dolapYap(k, false);
+  return {
+    ad: `Özel dolap ${k.W}×${k.H}×${k.D}`, g: k.W / 100, d: k.D / 100, y: k.H / 100,
+    fiyat: fiyatHesapla(k, d.sayim).toplam, sablon: d.grup, ozel: structuredClone(k),
+  };
+}
+
+// Yeni dolabı odaya ekler; düzenlenen bir dolap varsa onu aynı yerde (sığmazsa en yakın duvarda) yenisiyle değiştirir
+function ozelDolapYerlestir(k) {
+  const def = ozelDolapDef(k), eski = konf.duzenlenen;
+  if (!eski || !esyalar.includes(eski)) return urunEkle(def);
+  const sira = esyalar.indexOf(eski), { x, z } = eski.grup.position;
+  esyalar.splice(sira, 1);
+  scene.remove(eski.grup);
+  const it = esyaOlustur(def);
+  dondurAyarla(it, eski.rot);
+  const yer = uygunMu(it, x, z, it.rot) ? [x, z, it.rot] : duvarYeriBul(it);
+  if (!yer) {
+    scene.remove(it.grup);
+    esyalar.pop();
+    esyalar.splice(sira, 0, eski);
+    scene.add(eski.grup);
+    uyar('Yeni ölçülerle dolap odaya sığmıyor');
+    return false;
+  }
+  if (secili === eski) secili = null;
+  dondurAyarla(it, yer[2]);
+  konum(it, yer[0], yer[1]);
+  sec(it);
+  listeGuncelle();
+  return true;
+}
+
+$('adimlar').innerHTML = ADIMLAR.map((a, i) => `<button class="adim" data-adim="${i}"><i>${i + 1}</i>${a}</button>`).join('');
+$('adimlar').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-adim]');
+  if (b) adimaGit(+b.dataset.adim);
+});
+$('konfPanel').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-ayar]');
+  if (b && !b.disabled) ayarla(b.dataset.ayar, b.dataset.deger);
+});
+$('konfPanel').addEventListener('input', ev => { if (ev.target.type === 'range' && ev.target.dataset.olcu) olcuDegisti(ev.target, false); });
+$('konfPanel').addEventListener('change', ev => { if (ev.target.dataset.olcu) olcuDegisti(ev.target, true); });
+$('konfGeri').onclick = () => adimaGit(konf.adim - 1);
+$('konfIleri').onclick = () => adimaGit(konf.adim + 1);
+$('konfKapat').onclick = konfKapat;
+document.querySelectorAll('[data-gorus]').forEach(b => { b.onclick = () => kameraGorus(b.dataset.gorus); });
+$('kapakDugme').onclick = () => {
+  konf.kapakAcik = !konf.kapakAcik;
+  $('kapakDugme').textContent = konf.kapakAcik ? 'Kapakları kapat' : 'Kapakları aç';
+};
+$('olcuDugme').onclick = () => {
+  konf.olcuGoster = !konf.olcuGoster;
+  konf.olcuGrup.visible = konf.olcuGoster;
+  $('olcuDugme').classList.toggle('aktif', konf.olcuGoster);
+  $('olcuDugme').setAttribute('aria-pressed', konf.olcuGoster);
+};
+function taslakYaz() {
+  try {
+    localStorage.setItem(TASLAK_ANAHTAR, JSON.stringify(konf.k));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+$('taslakKaydet').onclick = () => {
+  if (taslakYaz()) uyar('Taslak bu cihaza kaydedildi', 'bilgi');
+  else uyar('Taslak kaydedilemedi: tarayıcı depolaması kapalı');
+};
+
+// Siteye gönderilen sepet kaydı: ad, fiyat, kısa özellik metni ve yeniden düzenlemek için tasarımın kendisi
+function ozelSepetKaydi(k, fiyat, gorsel) {
+  const ozellik = [`${k.W}×${k.H}×${k.D} cm`, bul(HATLAR, k.hat).ad, bul(KAPAK_TURLERI, k.kapak).ad.toLowerCase() + ' kapak',
+    `${bul(DEKORLAR, k.govdeDekor).ad} / ${bul(DEKORLAR, k.kapakDekor).ad}`].join(' · ');
+  return { ad: `Özel dolap ${k.W}×${k.H}×${k.D}`, fiyat, ozellik, gorsel, ozel: structuredClone(k) };
+}
+// Sepette gösterilecek küçük görsel: konfigüratör sahnesinin o anki görüntüsü
+function dolapGorseli() {
+  konf.r.render(konf.sc, konf.kam);
+  const kaynak = konf.r.domElement, c = document.createElement('canvas');
+  c.width = 240;
+  c.height = Math.round((240 * kaynak.height) / kaynak.width);
+  const g = c.getContext('2d');
+  g.fillStyle = '#' + konf.sc.background.getHexString();
+  g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(kaynak, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.82);
+}
+
+// Mağazanın "Kendin tasarla" sekmesi: konfigüratör tek başına açılır; sepete ekler ya da tasarımı planlayıcıda dener
+function tasarlaModunuBaslat() {
+  document.body.classList.add('tasarla-modu');
+  const site = window.parent !== window ? window.parent : null;
+  $('konfKapat').hidden = true;
+  konfAc();
+  $('odayaEkle').textContent = 'Odamda dene';
+  $('odayaEkle').classList.remove('ana');
+  $('konfSepet').classList.add('ana');
+  $('konfSepet').hidden = !site;
+  $('odayaEkle').onclick = () => {
+    if (site) return site.postMessage({ tip: 'ozelDene', dolap: konf.k }, '*');
+    // Site dışında açıldıysa taslak olarak kaydedip tam planlayıcıya geç
+    taslakYaz();
+    location.href = 'planlayici.html';
+  };
+  $('konfSepet').onclick = () => {
+    site.postMessage({ tip: 'sepetOzel', urun: ozelSepetKaydi(konf.k, konf.fiyat.toplam, dolapGorseli()) }, '*');
+    uyar('Dolap sepete eklendi', 'bilgi');
+  };
+}
+$('odayaEkle').onclick = () => {
+  if (konf.k.W > Math.max(oda.W, oda.L) * 100) return uyar('Bu genişlikte bir dolap odanın hiçbir duvarına sığmıyor');
+  if (ozelDolapYerlestir(konf.k)) konfKapat();
+};
+$('duzenle').onclick = () => secili?.def.ozel && konfAc(secili.def.ozel, secili);
+
 // ---------- Arayüz bağlantıları ----------
 $('firmaAdi').textContent = FIRMA_ADI;
 
@@ -1188,9 +2170,15 @@ $('aci').addEventListener('input', ev => {
   }
 });
 
-function katalogCiz(defs) {
+function katalogCiz(defs, ozelKart) {
   const el = $('katalog');
   el.innerHTML = '';
+  // İlk kart: ölçüye özel dolap konfigüratörü
+  const oz = document.createElement('button');
+  oz.className = 'urun ozel';
+  oz.innerHTML = `<img alt="" src="${ozelKart.onizleme}"><div><b>Kendin tasarla</b><span>Ölçüye özel dolap · ${DOLAP_SINIR.W[0]}–${DOLAP_SINIR.W[1]} cm</span><span>Ölçü, iç düzen, kapak ve rengi sen seç</span></div>`;
+  oz.onclick = () => konfAc();
+  el.appendChild(oz);
   for (const def of defs) {
     const b = document.createElement('button');
     b.className = 'urun';
@@ -1228,6 +2216,7 @@ $('gor3d').onclick = () => { ustten = false; $('gor3d').classList.add('aktif'); 
 $('gorUst').onclick = () => { ustten = true; $('gorUst').classList.add('aktif'); $('gor3d').classList.remove('aktif'); kameraAyarla(); };
 
 addEventListener('keydown', ev => {
+  if (!$('konf').hidden) { if (ev.key === 'Escape' && !TASARLA_MODU) konfKapat(); return; }
   if (!$('incele').hidden) { if (ev.key === 'Escape') inceleKapat(); return; }
   if (!secili || ev.target.closest('input, select')) return;
   const k = ev.key.toLowerCase();
@@ -1266,86 +2255,98 @@ function ciz() {
 renderer.setAnimationLoop(ciz);
 
 // ---------- Başlangıç ----------
-odaKur();
-kameraAyarla();
-listeGuncelle();
-aoKur();
+// Mağazanın "Kendin tasarla" sekmesi bu sayfayı ?mod=tasarla ile açar: yalnızca konfigüratör görünür,
+// oda ve 3D modeller hiç yüklenmez.
+if (TASARLA_MODU) tasarlaModunuBaslat();
+else {
+  odaKur();
+  kameraAyarla();
+  listeGuncelle();
+  aoKur();
 
-const modelliler = KATALOG.filter(d => d.model);
-const sonuclar = await Promise.allSettled(modelliler.map(d => modelHazirla(d).finally(() => ilerleme(modelliler.length))));
-sonuclar.forEach(s => s.status === 'rejected' && console.warn(s.reason));
-const hazir = KATALOG.filter(d => !d.model || d.sablon);
-if (sonuclar.some(s => s.status === 'rejected')) uyar('Bazı ürünlerin 3D modeli yüklenemedi');
-onizlemeleriCiz(hazir);
-katalogCiz(hazir);
-$('yukleniyor').hidden = true;
+  const modelliler = KATALOG.filter(d => d.model);
+  const sonuclar = await Promise.allSettled(modelliler.map(d => modelHazirla(d).finally(() => ilerleme(modelliler.length))));
+  sonuclar.forEach(s => s.status === 'rejected' && console.warn(s.reason));
+  const hazir = KATALOG.filter(d => !d.model || d.sablon);
+  if (sonuclar.some(s => s.status === 'rejected')) uyar('Bazı ürünlerin 3D modeli yüklenemedi');
+  const ozelKart = { sablon: dolapYap(VARSAYILAN_DOLAP, false).grup };
+  onizlemeleriCiz([ozelKart, ...hazir]);
+  katalogCiz(hazir, ozelKart);
+  $('yukleniyor').hidden = true;
 
-// Örnek salon düzeni; yeri doluysa ürün en yakın boş yere konur
-function yerlestir(ad, x, z, rot = 0) {
-  const def = hazir.find(d => d.ad === ad);
-  if (!def) return;
-  const it = esyaOlustur(def);
-  dondurAyarla(it, rot);
-  if (uygunMu(it, x, z, it.rot)) return konum(it, x, z);
-  const yer = bosYerBul(it);
-  if (!yer) return esyaSil(it);
-  dondurAyarla(it, yer[2]);
-  konum(it, yer[0], yer[1]);
-}
-yerlestir('Halı', 0, 0.3);
-yerlestir('TV Ünitesi', 0, -oda.L / 2 + 0.27);
-yerlestir('Chester Kanepe', 0, 1.5, Math.PI);
-yerlestir('Orta Sehpa', 0, 0.25);
-yerlestir('Klasik Berjer', -1.6, 0.3, Math.PI / 2);
-yerlestir('Saksı Bitkisi', 1.8, -2.05);
-listeGuncelle();
+  // Örnek salon düzeni; yeri doluysa ürün en yakın boş yere konur
+  function yerlestir(ad, x, z, rot = 0) {
+    const def = hazir.find(d => d.ad === ad);
+    if (!def) return;
+    const it = esyaOlustur(def);
+    dondurAyarla(it, rot);
+    if (uygunMu(it, x, z, it.rot)) return konum(it, x, z);
+    const yer = bosYerBul(it);
+    if (!yer) return esyaSil(it);
+    dondurAyarla(it, yer[2]);
+    konum(it, yer[0], yer[1]);
+  }
+  yerlestir('Halı', 0, 0.3);
+  yerlestir('TV Ünitesi', 0, -oda.L / 2 + 0.27);
+  yerlestir('Chester Kanepe', 0, 1.5, Math.PI);
+  yerlestir('Orta Sehpa', 0, 0.25);
+  yerlestir('Klasik Berjer', -1.6, 0.3, Math.PI / 2);
+  yerlestir('Saksı Bitkisi', 1.8, -2.05);
+  listeGuncelle();
 
-// ---------- Site ile haberleşme (bu sayfa bir web sitesinin içine gömülüyse) ----------
-// Siteden gelenler: ekle / incele (urun, renk), kamera (konum, hedef), foto.
-// Siteye gidenler: hazir, sepet (urunler: [{ad, renk}]), foto (url).
-if (window.parent !== window) {
-  const site = window.parent;
-  document.body.classList.add('gomulu');
-  $('sepeteEkle').hidden = false;
-  $('sepeteEkle').onclick = () => {
-    if (!esyalar.length) return uyar('Odada henüz ürün yok');
-    site.postMessage({ tip: 'sepet', urunler: esyalar.map(it => ({ ad: it.def.ad, renk: it.renk })) }, '*');
-    uyar(`${esyalar.length} ürün sepete eklendi`, true);
-  };
+  // ---------- Site ile haberleşme (bu sayfa bir web sitesinin içine gömülüyse) ----------
+  // Siteden gelenler: ekle / incele (urun, renk), ozelEkle (dolap tasarımı), kamera (konum, hedef), foto.
+  // Siteye gidenler: hazir, sepet (urunler: [{ad, renk}] ya da özel dolap kaydı), foto (url).
+  if (window.parent !== window) {
+    const site = window.parent;
+    document.body.classList.add('gomulu');
+    $('sepeteEkle').hidden = false;
+    $('sepeteEkle').onclick = () => {
+      if (!esyalar.length) return uyar('Odada henüz ürün yok');
+      const urunler = esyalar.map(it => (it.def.ozel ? ozelSepetKaydi(it.def.ozel, it.def.fiyat) : { ad: it.def.ad, renk: it.renk }));
+      site.postMessage({ tip: 'sepet', urunler }, '*');
+      uyar(`${esyalar.length} ürün sepete eklendi`, 'bilgi');
+    };
 
-  const renklendir = (grup, renk, mallar = []) => grup.traverse(m => {
-    if (!m.isMesh) return;
-    m.material = m.material.clone();
-    m.material.color.set(renk);
-    mallar.push(m.material);
-  });
+    const renklendir = (grup, renk, mallar = []) => grup.traverse(m => {
+      if (!m.isMesh) return;
+      m.material = m.material.clone();
+      m.material.color.set(renk);
+      mallar.push(m.material);
+    });
 
-  addEventListener('message', e => {
-    if (e.source !== site || !e.data) return;
-    const { tip, urun, renk } = e.data;
-    const def = hazir.find(d => d.ad === urun);
-    if (tip === 'ekle' && def) {
-      if (!$('incele').hidden) inceleKapat();
-      urunEkle(def);
-      if (renk && def.renkler && secili?.def === def) {
-        secili.renk = renk;
-        secili.mallar.forEach(m => m.color.set(renk));
-        sec(secili);
+    addEventListener('message', e => {
+      if (e.source !== site || !e.data) return;
+      const { tip, urun, renk } = e.data;
+      const def = hazir.find(d => d.ad === urun);
+      if (tip === 'ekle' && def) {
+        if (!$('incele').hidden) inceleKapat();
+        urunEkle(def);
+        if (renk && def.renkler && secili?.def === def) {
+          secili.renk = renk;
+          secili.mallar.forEach(m => m.color.set(renk));
+          sec(secili);
+        }
+      } else if (tip === 'incele' && def) {
+        const grup = def.sablon ? def.sablon.clone(true) : def.yap(new THREE.MeshStandardMaterial({ color: def.renkler[0], roughness: 0.95 }));
+        if (renk && def.renkler) renklendir(grup, renk);
+        inceleAc({ def, grup });
+      } else if (tip === 'ozelEkle' && e.data.dolap) {
+        if (!$('incele').hidden) inceleKapat();
+        if (!$('konf').hidden) konfKapat();
+        konf.duzenlenen = null;
+        ozelDolapYerlestir(dolapDuzelt(structuredClone(e.data.dolap)));
+      } else if (tip === 'kamera') {
+        $('gor3d').click();
+        camera.position.fromArray(e.data.konum);
+        controls.target.fromArray(e.data.hedef);
+        controls.update();
+      } else if (tip === 'foto') {
+        fotografCek().then(url => site.postMessage({ tip: 'foto', url }, '*'));
       }
-    } else if (tip === 'incele' && def) {
-      const grup = def.sablon ? def.sablon.clone(true) : def.yap(new THREE.MeshStandardMaterial({ color: def.renkler[0], roughness: 0.95 }));
-      if (renk && def.renkler) renklendir(grup, renk);
-      inceleAc({ def, grup });
-    } else if (tip === 'kamera') {
-      $('gor3d').click();
-      camera.position.fromArray(e.data.konum);
-      controls.target.fromArray(e.data.hedef);
-      controls.update();
-    } else if (tip === 'foto') {
-      fotografCek().then(url => site.postMessage({ tip: 'foto', url }, '*'));
-    }
-  });
-  site.postMessage({ tip: 'hazir' }, '*');
+    });
+    site.postMessage({ tip: 'hazir' }, '*');
+  }
 }
 </script>
 </body>

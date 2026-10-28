@@ -252,6 +252,7 @@
   .sepet-satir { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
   .sepet-satir figure { margin: 0; width: 64px; height: 64px; border-radius: 10px; background: var(--tile); display: grid; place-items: center; }
   .sepet-satir img { width: 80%; height: 80%; object-fit: contain; }
+  .sepet-satir img.ozel { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
   .sepet-satir .ad { font-weight: 600; }
   .sepet-satir .alt { color: var(--muted); font-size: 13px; }
   .adet { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; }
@@ -347,6 +348,7 @@
       <a href="#depolama" data-yol="depolama">Depolama</a>
       <a href="#dekorasyon" data-yol="dekorasyon">Dekorasyon</a>
       <a href="#indirim" data-yol="indirim">İndirimdekiler</a>
+      <a href="#tasarla" data-yol="tasarla">Kendin Tasarla</a>
       <a href="#planlayici" data-yol="planlayici" class="planlayici-link"><b>3D</b>&nbsp;Odanı Tasarla</a>
     </nav>
   </div>
@@ -534,6 +536,21 @@
         <a class="dugme cizgi kucuk" href="#koleksiyon">Ürünlere dön</a>
       </div>
       <div class="planlayici-cerceve" id="planlayiciCerceve"></div>
+    </div>
+  </section>
+
+  <!-- KENDİN TASARLA: ölçüye özel dolap konfigüratörü -->
+  <section data-gorunum="tasarla" hidden>
+    <div class="kap">
+      <div class="planlayici-bas">
+        <div>
+          <span class="etiket">Ölçüye özel üretim</span>
+          <h1 style="font-size:clamp(1.9rem,3.2vw,2.6rem);margin-top:8px">Dolabını kendin tasarla</h1>
+          <p>Ölçünü gir, bölmeleri, kapakları ve renkleri seç; fiyat her adımda güncellenir. Beğendiğin tasarımı sepete ekle ya da "Odamda dene" ile 3D odanda gör.</p>
+        </div>
+        <a class="dugme cizgi kucuk" href="#planlayici">3D odama geç</a>
+      </div>
+      <div class="planlayici-cerceve" id="tasarlaCerceve"></div>
     </div>
   </section>
 
@@ -766,16 +783,32 @@ function planlayiciyaGonder(mesaj, git) {
   if (planlayiciHazir) cerceve.contentWindow.postMessage(mesaj, '*'); else kuyruk.push(mesaj);
   if (git) location.hash = 'planlayici';
 }
+// "Kendin tasarla" sekmesi: aynı planlayıcı sayfası yalnızca dolap konfigüratörüyle açılır (3D modeller yüklenmez)
+let tasarlaCerceve = null;
+function tasarlaYukle() {
+  if (tasarlaCerceve) return;
+  tasarlaCerceve = document.createElement('iframe');
+  tasarlaCerceve.src = 'planlayici.html?mod=tasarla';
+  tasarlaCerceve.title = 'Ölçüye özel dolap tasarlayıcı';
+  $('tasarlaCerceve').appendChild(tasarlaCerceve);
+}
 addEventListener('message', e => {
-  if (!cerceve || e.source !== cerceve.contentWindow || !e.data) return;
+  if (!e.data) return;
+  if (tasarlaCerceve && e.source === tasarlaCerceve.contentWindow) {
+    if (e.data.tip === 'sepetOzel') { ozelSepeteEkle(e.data.urun); bildir(`${e.data.urun.ad} sepete eklendi`); }
+    else if (e.data.tip === 'ozelDene') planlayiciyaGonder({ tip: 'ozelEkle', dolap: e.data.dolap }, true);
+    return;
+  }
+  if (!cerceve || e.source !== cerceve.contentWindow) return;
   if (e.data.tip === 'hazir') {
     planlayiciHazir = true;
     kuyruk.splice(0).forEach(m => cerceve.contentWindow.postMessage(m, '*'));
   } else if (e.data.tip === 'sepet') {
-    for (const { ad, renk } of e.data.urunler) {
-      const u = URUNLER.find(x => x.ad === ad);
+    for (const urun of e.data.urunler) {
+      if (urun.ozel) { ozelSepeteEkle(urun); continue; }
+      const u = URUNLER.find(x => x.ad === urun.ad);
       if (!u) continue;
-      const ton = u.renkler?.find(r => r.hex === renk);
+      const ton = u.renkler?.find(r => r.hex === urun.renk);
       sepeteEkle(u.id, ton?.ad);
     }
     sepetAc();
@@ -795,19 +828,39 @@ function sepeteEkle(id, renk) {
   if (var_) var_.adet++; else sepet.push({ id, renk, adet: 1 });
   sepetKaydet();
 }
+// Ölçüye özel dolap: kendi adı, fiyatı ve tasarımıyla saklanır; aynı tasarım ikinci kez eklenirse adedi artar
+const DOLAP_SIMGE = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" stroke="#8a8f8b" stroke-width="2"><rect x="8" y="5" width="24" height="30" rx="1.5"/><path d="M20 5v30M17 18v4M23 18v4"/></svg>');
+function ozelSepeteEkle(u) {
+  if (!u || !u.ozel || !(u.fiyat > 0)) return;
+  const tasarim = JSON.stringify(u.ozel);
+  const var_ = sepet.find(s => s.ozel && JSON.stringify(s.ozel) === tasarim);
+  if (var_) var_.adet++;
+  else sepet.push({ ozel: u.ozel, ad: String(u.ad), fiyat: +u.fiyat, ozellik: String(u.ozellik || ''), gorsel: u.gorsel || '', adet: 1 });
+  sepetKaydet();
+}
+const kacis = m => String(m).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+// Sepet satırının adı, fiyatı, görseli ve alt metni (katalog ürünü ya da özel dolap)
+function satirBilgi(s) {
+  if (s.ozel) {
+    const gorselOk = /^data:image\/(jpeg|png);base64,/.test(s.gorsel);
+    return { ad: kacis(s.ad), fiyat: s.fiyat, gorsel: gorselOk ? s.gorsel : DOLAP_SIMGE, ozelGorsel: gorselOk, alt: kacis(s.ozellik) };
+  }
+  const u = urunBul(s.id);
+  return u && { ad: u.ad, fiyat: u.fiyat, gorsel: gorsel(u), alt: s.renk || '' };
+}
 function sepetCiz() {
-  sepet = sepet.filter(s => urunBul(s.id) && s.adet > 0);
+  sepet = sepet.filter(s => satirBilgi(s) && s.adet > 0);
   const adet = sepet.reduce((t, s) => t + s.adet, 0);
-  const toplam = sepet.reduce((t, s) => t + urunBul(s.id).fiyat * s.adet, 0);
+  const toplam = sepet.reduce((t, s) => t + satirBilgi(s).fiyat * s.adet, 0);
   $('sepetSayac').textContent = adet;
   $('sepetToplam').textContent = fiyatYaz(toplam);
   $('sepetTaksit').textContent = toplam ? `Peşin fiyatına 9 × ${fiyatYaz(Math.ceil(toplam / 9))}` : '';
   $('teklif').hidden = !sepet.length;
   $('sepetListe').innerHTML = sepet.length ? sepet.map((s, i) => {
-    const u = urunBul(s.id);
+    const u = satirBilgi(s);
     return `<div class="sepet-satir">
-      <figure><img src="${gorsel(u)}" alt=""></figure>
-      <div><div class="ad">${u.ad}</div><div class="alt">${s.renk ? s.renk + ' · ' : ''}${fiyatYaz(u.fiyat)}</div>
+      <figure><img src="${u.gorsel}" alt=""${u.ozelGorsel ? ' class="ozel"' : ''}></figure>
+      <div><div class="ad">${u.ad}</div><div class="alt">${u.alt ? u.alt + ' · ' : ''}${fiyatYaz(u.fiyat)}</div>
         <div class="adet"><button data-i="${i}" data-d="-1" aria-label="Azalt">−</button><span>${s.adet}</span><button data-i="${i}" data-d="1" aria-label="Artır">+</button></div></div>
       <div class="sag"><b>${fiyatYaz(u.fiyat * s.adet)}</b><button class="kaldir" data-k="${i}">Kaldır</button></div>
     </div>`;
@@ -974,6 +1027,7 @@ function yonlendir() {
   if (yol === 'koleksiyon' || yol === 'indirim' || KATEGORILER[yol]) { gorunum = 'koleksiyon'; koleksiyonCiz(yol); }
   else if (yol.startsWith('urun-') && urunBul(yol.slice(5))) { gorunum = 'urun'; urunCiz(urunBul(yol.slice(5))); }
   else if (yol === 'planlayici') { gorunum = 'planlayici'; planlayiciYukle(); }
+  else if (yol === 'tasarla') { gorunum = 'tasarla'; tasarlaYukle(); }
   else if (yol === 'magazalar') gorunum = 'magazalar';
   if (yol !== 'koleksiyon') { arama = ''; $('aramaKutu').value = ''; }
   aktifYol = yol;
