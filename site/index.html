@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="tr">
+<!-- Bu dosya araclar/pages_hazirla.py ile site/magaza.html'den üretilir; doğrudan düzenlemeyin. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Örnek Mobilya</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+  /* Yerleşim: ortalanmış 1240px kap; üstte duyuru şeridi + yapışkan başlık; görünümler hash ile değişir
+     (anasayfa, koleksiyon/kategori, ürün, planlayıcı, mağazalar); sepet sağdan açılan çekmece. */
+  :root {
+    --paper: #f3f3ef;
+    --surface: #ffffff;
+    --tile: #e9e9e3;
+    --ink: #1a1d1b;
+    --muted: #666d68;
+    --line: #dddeda;
+    --accent: #2f5d50;
+    --accent-ink: #ffffff;
+    --accent-soft: #e2ebe7;
+    --sale: #a8462a;
+    --band: #1f2a26;
+    --band-ink: #eef2ef;
+    --band-muted: #a9b6b0;
+    --veil: rgba(15, 18, 16, 0.45);
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #111412; --surface: #191d1b; --tile: #202522; --ink: #eceeec; --muted: #9ea6a1;
+      --line: #2c322f; --accent: #86c2ae; --accent-ink: #0f1513; --accent-soft: #1e2d28; --sale: #e48a66;
+      --band: #0b0e0d; --band-ink: #eceeec; --band-muted: #93a19a; --veil: rgba(0, 0, 0, 0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #111412; --surface: #191d1b; --tile: #202522; --ink: #eceeec; --muted: #9ea6a1;
+    --line: #2c322f; --accent: #86c2ae; --accent-ink: #0f1513; --accent-soft: #1e2d28; --sale: #e48a66;
+    --band: #0b0e0d; --band-ink: #eceeec; --band-muted: #93a19a; --veil: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 40; background: var(--surface); }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; line-height: 1.08; margin: 0; text-wrap: balance; }
+  h1 { font-size: clamp(2.2rem, 4.6vw, 3.9rem); }
+  h2 { font-size: clamp(1.6rem, 2.8vw, 2.3rem); }
+  h3 { font-size: 1.15rem; letter-spacing: -0.01em; }
+  p { margin: 0; }
+  .kap { max-width: 1240px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+  .etiket { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .dugme {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 22px;
+    border-radius: 999px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+    font: 600 15px var(--body); text-decoration: none; cursor: pointer; transition: transform .15s, background .15s;
+  }
+  .dugme:hover { transform: translateY(-1px); }
+  .dugme.vurgu { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .dugme.cizgi { background: transparent; color: var(--ink); }
+  .dugme.kucuk { min-height: 38px; padding: 0 16px; font-size: 14px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* Duyuru ve başlık */
+  .duyuru { background: var(--band); color: var(--band-ink); font-size: 13px; }
+  .duyuru .kap { display: flex; justify-content: center; gap: 28px; padding-block: 8px; flex-wrap: wrap; text-align: center; }
+  .duyuru span:not(:first-child) { color: var(--band-muted); }
+  .baslik { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .baslik .ust { display: flex; align-items: center; gap: 20px; padding-block: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: -0.03em; white-space: nowrap; }
+  .logo svg { width: 30px; height: 30px; flex: none; }
+  .arama { flex: 1; max-width: 420px; margin-left: auto; position: relative; }
+  .arama input { width: 100%; height: 42px; padding: 0 16px 0 40px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; font-size: 15px; }
+  .arama svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; color: var(--muted); }
+  .ikonlar { display: flex; gap: 6px; }
+  .ikon { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 12px; border-radius: 999px; border: 0; background: transparent; color: var(--ink); font: 500 14px var(--body); text-decoration: none; cursor: pointer; }
+  .ikon:hover { background: var(--paper); }
+  .ikon svg { width: 20px; height: 20px; }
+  .sayac { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 600; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums; }
+  nav.menu { display: flex; gap: 4px; padding-bottom: 10px; overflow-x: auto; scrollbar-width: none; }
+  nav.menu a { padding: 7px 14px; border-radius: 999px; text-decoration: none; font-size: 15px; font-weight: 500; white-space: nowrap; color: var(--muted); }
+  nav.menu a:hover, nav.menu a.aktif { color: var(--ink); background: var(--paper); }
+  nav.menu a.planlayici-link { color: var(--accent); background: var(--accent-soft); margin-left: auto; }
+  nav.menu a.planlayici-link b { font-weight: 700; }
+
+  /* Ana sayfa */
+  .kahraman { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: center; padding-block: 56px 40px; }
+  .kahraman .metin { display: grid; gap: 22px; }
+  .kahraman p.giris { font-size: 18px; color: var(--muted); max-width: 46ch; }
+  .kahraman .eylemler { display: flex; gap: 12px; flex-wrap: wrap; }
+  .kahraman figure { margin: 0; position: relative; border-radius: 20px; overflow: hidden; background: var(--tile); aspect-ratio: 16 / 10; max-width: 100%; }
+  .kahraman figure img { width: 100%; height: 100%; object-fit: cover; }
+  .kahraman figcaption { position: absolute; left: 16px; bottom: 16px; right: 16px; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .rozet-cam { display: inline-flex; gap: 8px; align-items: center; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,0.86); color: #1a1d1b; font-size: 13px; font-weight: 500; backdrop-filter: blur(6px); }
+  .rozet-cam i { width: 8px; height: 8px; border-radius: 50%; background: #2f8f6d; }
+  .olcu-not { display: flex; gap: 18px; color: var(--muted); font-size: 14px; flex-wrap: wrap; }
+  .olcu-not b { color: var(--ink); font-family: var(--display); font-size: 22px; display: block; letter-spacing: -0.02em; }
+
+  .hizmetler { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border-block: 1px solid var(--line); }
+  .hizmet { background: var(--paper); padding: 22px 20px; display: grid; grid-template-columns: 36px 1fr; gap: 4px 14px; align-items: start; }
+  .hizmet svg { width: 28px; height: 28px; color: var(--accent); grid-row: span 2; }
+  .hizmet b { font-weight: 600; }
+  .hizmet span { color: var(--muted); font-size: 14px; }
+
+  .bolum { padding-block: 64px; }
+  .bolum-bas { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 28px; flex-wrap: wrap; }
+  .bolum-bas .sol { display: grid; gap: 10px; }
+  .bolum-bas a { font-weight: 600; text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 2px; }
+
+  .alanlar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .alan { position: relative; display: grid; align-content: space-between; min-height: 300px; padding: 20px; border-radius: 16px; background: var(--tile); text-decoration: none; overflow: hidden; }
+  .alan img { position: absolute; right: 4%; bottom: 4%; width: 84%; height: 64%; object-fit: contain; object-position: right bottom; transition: transform .3s; transform-origin: right bottom; }
+  .alan:hover img { transform: scale(1.04); }
+  .alan h3 { position: relative; font-size: 1.4rem; }
+  .alan span { position: relative; color: var(--muted); font-size: 14px; }
+
+  .sekmeler { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sekme { height: 38px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 500 14px var(--body); cursor: pointer; }
+  .sekme.aktif { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .izgara { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 18px; }
+  .kart { display: grid; gap: 12px; text-decoration: none; }
+  .kart figure { margin: 0; position: relative; aspect-ratio: 1; border-radius: 14px; background: var(--tile); display: grid; place-items: center; overflow: hidden; }
+  .kart figure img { width: 82%; height: 82%; object-fit: contain; transition: transform .3s; }
+  .kart:hover figure img { transform: scale(1.05); }
+  .kart .rozet { position: absolute; top: 12px; left: 12px; }
+  .kart .uc-boyut { position: absolute; right: 12px; bottom: 12px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--surface); color: var(--accent); }
+  .kart .bilgi { display: grid; gap: 2px; }
+  .kart .ad { font-weight: 600; }
+  .kart .olcu { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .fiyat { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  .fiyat b { font-weight: 600; }
+  .fiyat s { color: var(--muted); font-size: 14px; }
+  .fiyat .yuzde { color: var(--sale); font-size: 13px; font-weight: 600; }
+  .rozet { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--surface); color: var(--ink); }
+  .rozet.indirim { background: var(--sale); color: #fff; }
+  .rozet.yeni { background: var(--accent); color: var(--accent-ink); }
+
+  .bant { background: var(--band); color: var(--band-ink); }
+  .bant .kap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; padding-block: 72px; }
+  .bant .etiket { color: var(--band-muted); }
+  .bant p { color: var(--band-muted); }
+  .adimlar { list-style: none; padding: 0; margin: 28px 0 32px; display: grid; gap: 18px; counter-reset: adim; }
+  .adimlar li { display: grid; grid-template-columns: 40px 1fr; gap: 4px 16px; counter-increment: adim; }
+  .adimlar li::before { content: counter(adim); grid-row: span 2; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--band-muted); display: grid; place-items: center; font-family: var(--display); font-weight: 700; }
+  .adimlar b { font-weight: 600; color: var(--band-ink); }
+  .plan-cizim { width: 100%; height: auto; max-width: 100%; }
+
+  .showroom { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 20px; }
+  .showroom .kutu { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 32px; display: grid; gap: 16px; align-content: start; }
+  .showroom dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 20px; margin: 0; }
+  .showroom dt { color: var(--muted); }
+  .showroom dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .showroom .ic-mimar { background: var(--accent-soft); border-color: transparent; }
+
+  /* Montaj bölümü: kareler açık renkli stüdyoda çekildiği için bu bant her iki temada da açık kalır */
+  .montaj { --m-duvar: #e7e5df; --m-ink: #1a1b19; --m-muted: #5f615b; --m-cizgi: rgba(26, 27, 25, 0.16); --m-vurgu: #8a6a3d;
+    height: 420vh; position: relative; margin-top: 48px; background: var(--m-duvar); color: var(--m-ink); }
+  /* Sitenin yapışkan başlığının hemen altına yapışır (--ust: başlık yüksekliği, JS ile ölçülür) */
+  .montaj-yapiskan { position: sticky; top: var(--ust, 0px); height: calc(100vh - var(--ust, 0px)); height: calc(100svh - var(--ust, 0px)); overflow: hidden; }
+  .montaj video, .montaj-yedek { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; object-position: 50% 50%; background: var(--m-duvar); }
+  /* Dikey ekran (telefon): video 16:9 olduğu için ekranı doldurmaya çalışınca kitaplığın kenarları kesiliyordu.
+     Burada video, kitaplık (karenin ortadaki ~%50'si) ekran genişliğini dolduracak kadar büyütülür; yanlardan
+     yalnızca boş duvar kesilir. Video üste oturur, altta kalan alan render'daki zemin renginde, yazılar oraya gelir. */
+  @media (max-aspect-ratio: 1/1) {
+    .montaj.kapak .montaj-yapiskan { height: auto; min-height: 0; max-height: none; display: flex; flex-direction: column; background: #d2cdc7; }
+    .montaj.kapak .montaj-yapiskan::after { display: none; }
+    .montaj.kapak video, .montaj.kapak .montaj-yedek { position: relative; inset: auto; width: 140%; margin-left: -20%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; flex: none; }
+    /* Telefonda gerçek ekranın bir kısmını tarayıcı çubukları kaplar: uzun açıklamalar gizlenir, başlık ve düğmeler ilk ekrana sığar */
+    .montaj.kapak .montaj-adim p { display: none; }
+    /* Yazılar videonun altında; bütün adımlar aynı hücrede üst üste durur, alan en uzun adım kadar olur */
+    .montaj.kapak .montaj-metin { position: relative; left: auto; bottom: auto; width: auto; height: auto; display: grid; padding: 16px 20px 32px; }
+    .montaj.kapak .montaj-adim { position: relative; grid-area: 1 / 1; align-self: start; gap: 8px; }
+    .montaj.kapak .montaj-adim h1, .montaj.kapak .montaj-adim h2 { font-size: 1.95rem; }
+    /* Tekrar oynat düğmesi yazıların üstüne binmesin: videonun sağ üst köşesine */
+    .montaj.kapak .montaj-tekrar { top: 12px; right: 12px; left: auto; bottom: auto; transform: none; }
+  }
+  .montaj-yapiskan::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(90deg, rgba(231, 229, 223, 0.92) 0%, rgba(231, 229, 223, 0.7) 26%, rgba(231, 229, 223, 0) 48%); }
+  .montaj-metin { position: absolute; z-index: 1; left: max(20px, env(safe-area-inset-left, 0px)); bottom: calc(clamp(32px, 9vh, 96px) + env(safe-area-inset-bottom, 0px)); width: min(440px, calc(100% - 40px)); height: 60vh; }
+  /* Yazı geçişi sıralı: eskisi 0,15 sn'de tamamen kaybolur, yenisi ancak ondan sonra belirir; iki yazı asla üst üste görünmez */
+  .montaj-adim { position: absolute; left: 0; bottom: 0; width: 100%; display: grid; gap: 12px; justify-items: start; opacity: 0; visibility: hidden; transform: translateY(10px);
+    transition: opacity .15s, transform .15s, visibility 0s linear .15s; pointer-events: none; }
+  .montaj-adim.gorunur { opacity: 1; visibility: visible; transform: none; pointer-events: auto;
+    transition: opacity .3s ease .15s, transform .3s ease .15s, visibility 0s linear .15s; }
+  .montaj-adim .etiket { color: var(--m-muted); }
+  /* Kapak modu: kaydırma yok, ekran yüksekliğinde sabit; animasyon kendiliğinden oynar */
+  .montaj.kapak { margin-top: 0; height: auto; }
+  .montaj.kapak .montaj-yapiskan { position: relative; top: 0; height: calc(100svh - var(--ust, 0px)); min-height: 520px; max-height: 900px; }
+  .montaj-tekrar { position: absolute; z-index: 1; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    border: 1px solid var(--m-cizgi); background: rgba(255, 255, 255, 0.6); color: var(--m-ink); border-radius: 999px; padding: 6px 14px;
+    font: 600 12px var(--body); letter-spacing: 0.04em; cursor: pointer; backdrop-filter: blur(6px); }
+  .montaj-adim h1, .montaj-adim h2 { font-size: clamp(2.2rem, 4.6vw, 3.8rem); color: var(--m-ink); }
+  .montaj-adim h1 em, .montaj-adim h2 em { font-style: normal; color: var(--m-vurgu); }
+  .montaj-eylemler { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .montaj-eylemler .dugme.cizgi { background: transparent; border-color: var(--m-ink); color: var(--m-ink); }
+  .montaj-adim p { color: var(--m-muted); max-width: 38ch; }
+  .montaj-adim > .dugme, .montaj-eylemler .dugme:not(.cizgi) { margin-top: 8px; background: var(--m-ink); border-color: var(--m-ink); color: var(--m-duvar); }
+
+  /* Koleksiyon */
+  .sayfa-bas { padding-block: 40px 24px; display: grid; gap: 12px; }
+  .kirinti { font-size: 14px; color: var(--muted); }
+  .kirinti a { text-decoration: none; }
+  .filtre { display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; padding-bottom: 24px; border-bottom: 1px solid var(--line); margin-bottom: 28px; }
+  .filtre select { height: 38px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; }
+  .bos-sonuc { padding: 48px 0; color: var(--muted); }
+
+  /* Ürün sayfası */
+  .urun { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; padding-bottom: 64px; }
+  .urun-gorsel { position: relative; aspect-ratio: 1; border-radius: 20px; background: var(--tile); display: grid; place-items: center; overflow: hidden; max-width: 100%; }
+  .urun-gorsel .katman { position: relative; width: 78%; height: 78%; }
+  .urun-gorsel img { width: 100%; height: 100%; object-fit: contain; }
+  /* Kumaş tonu: ürün görselinin şekliyle maskelenmiş renk katmanı, çarpma karışımıyla dokuyu korur */
+  .urun-gorsel .ton { position: absolute; inset: 0; mix-blend-mode: multiply; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; pointer-events: none; }
+  .urun-gorsel .uc-dugmeler { position: absolute; left: 16px; bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .urun-bilgi { display: grid; gap: 22px; align-content: start; }
+  .urun-bilgi .fiyat b { font-size: 28px; font-family: var(--display); letter-spacing: -0.02em; }
+  .taksit { color: var(--muted); font-size: 14px; }
+  .renk-sec { display: grid; gap: 10px; }
+  .renkler { display: flex; gap: 10px; flex-wrap: wrap; }
+  .renk { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+  .renk.secili { box-shadow: 0 0 0 2px var(--ink); }
+  .ozellikler { display: grid; grid-template-columns: max-content 1fr; gap: 10px 24px; margin: 0; padding: 20px 0; border-block: 1px solid var(--line); }
+  .ozellikler dt { color: var(--muted); }
+  .ozellikler dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .urun-bilgi .eylemler { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .urun-bilgi .eylemler .dugme:first-child { grid-column: 1 / -1; }
+  .teslimat { display: grid; gap: 8px; font-size: 14px; color: var(--muted); }
+  .teslimat div { display: flex; gap: 10px; align-items: center; }
+  .teslimat svg { width: 18px; height: 18px; color: var(--accent); flex: none; }
+
+  /* Planlayıcı görünümü */
+  .planlayici-bas { display: flex; justify-content: space-between; align-items: end; gap: 20px; padding-block: 28px 18px; flex-wrap: wrap; }
+  .planlayici-bas p { color: var(--muted); max-width: 60ch; margin-top: 8px; }
+  .planlayici-cerceve { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); margin-bottom: 40px; }
+  .planlayici-cerceve iframe { display: block; width: 100%; height: calc(100vh - 210px); min-height: 620px; border: 0; }
+
+  /* Sepet çekmecesi */
+  .perde { position: fixed; inset: 0; z-index: 50; background: var(--veil); }
+  .sepet { position: fixed; top: 0; right: 0; bottom: 0; z-index: 51; width: min(420px, 100%); background: var(--surface); display: flex; flex-direction: column; box-shadow: -10px 0 40px rgba(0,0,0,.15);
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .sepet header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--line); }
+  .sepet .liste { flex: 1; overflow-y: auto; padding: 8px 24px; }
+  .sepet-satir { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .sepet-satir figure { margin: 0; width: 64px; height: 64px; border-radius: 10px; background: var(--tile); display: grid; place-items: center; }
+  .sepet-satir img { width: 80%; height: 80%; object-fit: contain; }
+  .sepet-satir .ad { font-weight: 600; }
+  .sepet-satir .alt { color: var(--muted); font-size: 13px; }
+  .adet { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; }
+  .adet button { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; font: inherit; }
+  .adet span { min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+  .sepet-satir .sag { text-align: right; display: grid; gap: 6px; font-variant-numeric: tabular-nums; }
+  .sepet-satir .kaldir { border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; }
+  .sepet footer { padding: 20px 24px; border-top: 1px solid var(--line); display: grid; gap: 12px; }
+  .sepet .toplam { display: flex; justify-content: space-between; font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .not { font-size: 13px; color: var(--muted); }
+  .kapat { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--paper); color: var(--ink); font-size: 20px; cursor: pointer; }
+
+  #bildirim { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); z-index: 60; background: var(--ink); color: var(--paper); padding: 12px 18px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; }
+  #bildirim.goster { opacity: 1; transform: translate(-50%, 0); }
+
+  footer.alt-bilgi { background: var(--surface); border-top: 1px solid var(--line); margin-top: 24px; }
+  footer.alt-bilgi .kap { display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: 32px; padding-block: 48px 24px; }
+  footer.alt-bilgi h4 { margin: 0 0 12px; font-size: 14px; font-weight: 600; }
+  footer.alt-bilgi ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; color: var(--muted); font-size: 14px; }
+  footer.alt-bilgi a { text-decoration: none; }
+  footer.alt-bilgi .telif { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 20px; color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  @media (max-width: 980px) {
+    .kahraman, .bant .kap, .urun, .showroom { grid-template-columns: minmax(0, 1fr); }
+    .kahraman { gap: 28px; padding-block: 32px; }
+    .hizmetler, .alanlar, .izgara { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    footer.alt-bilgi .kap { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .baslik .ust { flex-wrap: wrap; gap: 10px; }
+    .arama { order: 3; flex-basis: 100%; max-width: none; margin-left: 0; }
+    .ikonlar { margin-left: auto; }
+    .ikon .yazi { display: none; }
+    /* Telefonda üst kısım sıkılaşır: kapak animasyonu ve başlığı ilk ekrana sığsın */
+    .duyuru { display: none; }
+    .baslik .ust { padding-block: 10px 8px; gap: 8px; }
+    .logo { font-size: 19px; }
+    .logo svg { width: 26px; height: 26px; }
+    .arama input, .ikon { height: 38px; }
+    nav.menu { padding-bottom: 6px; }
+    nav.menu a { padding: 5px 12px; font-size: 14px; }
+    .hizmetler { grid-template-columns: minmax(0, 1fr); }
+    .alan { min-height: 220px; }
+    .izgara { gap: 22px 12px; }
+    .bolum { padding-block: 44px; }
+    .showroom .kutu { padding: 22px; }
+    footer.alt-bilgi .kap { grid-template-columns: minmax(0, 1fr); }
+    .planlayici-cerceve iframe { height: 1100px; min-height: 0; }
+  }
+  @media (max-width: 860px) {
+    .montaj-yapiskan::after { background: linear-gradient(0deg, rgba(231, 229, 223, 0.96) 0%, rgba(231, 229, 223, 0.8) 30%, rgba(231, 229, 223, 0) 52%); }
+    .montaj-metin { height: 45vh; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .dugme, .kart figure img, .alan img, #bildirim, .montaj-adim { transition: none; }
+  }
+</style>
+
+<div class="duyuru"><div class="kap">
+  <span>Peşin fiyatına 9 taksit</span>
+  <span>2 haftada ücretsiz teslimat ve kurulum</span>
+  <span>Yeni: ürünleri odanızda 3D olarak deneyin</span>
+</div></div>
+
+<header class="baslik">
+  <div class="kap">
+    <div class="ust">
+      <a class="logo" href="#anasayfa" aria-label="Örnek Mobilya ana sayfa">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="8" fill="var(--accent)"/><path d="M9 20v-5.5a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3V20M7.5 20h17M10 20v3M22 20v3" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"/></svg>
+        <span id="firmaAdi">Örnek Mobilya</span>
+      </a>
+      <form class="arama" role="search" id="aramaForm">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="m14 14 4 4" stroke-linecap="round"/></svg>
+        <input type="search" id="aramaKutu" placeholder="Kanepe, sehpa, masa ara…" aria-label="Ürün ara">
+      </form>
+      <div class="ikonlar">
+        <a class="ikon" href="#magazalar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          <span class="yazi">Mağaza</span>
+        </a>
+        <button class="ikon" id="sepetAc" aria-label="Sepeti aç">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+          <span class="yazi">Sepet</span>
+          <span class="sayac" id="sepetSayac">0</span>
+        </button>
+      </div>
+    </div>
+    <nav class="menu" aria-label="Kategoriler">
+      <a href="#koleksiyon" data-yol="koleksiyon">Tüm ürünler</a>
+      <a href="#oturma-odasi" data-yol="oturma-odasi">Oturma Odası</a>
+      <a href="#yemek-odasi" data-yol="yemek-odasi">Yemek Odası</a>
+      <a href="#depolama" data-yol="depolama">Depolama</a>
+      <a href="#dekorasyon" data-yol="dekorasyon">Dekorasyon</a>
+      <a href="#indirim" data-yol="indirim">İndirimdekiler</a>
+      <a href="#planlayici" data-yol="planlayici" class="planlayici-link"><b>3D</b>&nbsp;Odanı Tasarla</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ANA SAYFA -->
+  <section data-gorunum="anasayfa">
+    <!-- KAPAK: kaydırdıkça parça parça birleşen kitaplık (Blender Cycles ile render edilmiş 160 kare) -->
+    <section class="montaj kapak" id="montajBolum" aria-label="Ölçüye özel kitaplığın montajı">
+      <div class="montaj-yapiskan">
+        <video id="montajVideo" poster="montaj/kare_0001.jpg" muted playsinline preload="auto"
+          aria-label="Kitaplığın arkalık, yan dikmeler, raflar ve kapaklarla parça parça birleşmesi"></video>
+        <div class="montaj-metin">
+          <div class="montaj-adim" data-bas="148"><span class="etiket">Ölçüye özel üretim · 3D tasarım</span><h1>Ölçünüze göre.<br><em>Milimetresine kadar.</em></h1><p>Mobilyanızı ölçülerinize göre tasarlayın, 3D olarak her açıdan inceleyin, odanızda deneyin. Biz üretip kuralım.</p>
+            <div class="montaj-eylemler"><a class="dugme" href="#planlayici">Odanı 3D tasarla</a><a class="dugme cizgi" href="#koleksiyon">Ürünleri incele</a></div></div>
+          <div class="montaj-adim" data-bas="0"><span class="etiket">Ölçüye özel üretim</span><h2>Önce arkalık,<br>sonra <em>gövde.</em></h2><p>Her parça tek tek kesilir, kenar bandı çekilir ve montaja hazırlanır.</p></div>
+          <div class="montaj-adim" data-bas="50"><span class="etiket">Ölçüye özel üretim</span><h2>28 parça.<br><em>Tek mobilya.</em></h2><p>19 mm meşe kaplama levhalar, yağlı yüzey ve siyah çelik ayaklar.</p></div>
+          <div class="montaj-adim" data-bas="108"><span class="etiket">Ölçüye özel üretim</span><h2>Teslim ve<br><em>montaj dahil.</em></h2><p>Ekibimiz evinizde kurar, ambalajı geri alır.</p></div>
+        </div>
+        <button class="montaj-tekrar" id="montajTekrar" hidden>↻ Tekrar oynat</button>
+      </div>
+    </section>
+
+    <div class="kap" style="padding-top:32px"><div class="hizmetler">
+      <div class="hizmet"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h13v11H3zM16 12h5l4 4v3h-9"/><circle cx="8" cy="20.5" r="2.2"/><circle cx="20" cy="20.5" r="2.2"/></svg><b>Ücretsiz teslimat</b><span>Randevulu, 2 hafta içinde</span></div>
+      <div class="hizmet"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 5.5a5 5 0 0 0-6.4 6.4L4 18.5 7.5 22l6.6-6.6a5 5 0 0 0 6.4-6.4l-3.2 3.2-2.8-.7-.7-2.8L17 5.5Z"/></svg><b>Ücretsiz kurulum</b><span>Montaj ekibimiz kurar, ambalajı alır</span></div>
+      <div class="hizmet"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3 5 7v6c0 6 4 10 9 12 5-2 9-6 9-12V7l-9-4Z"/><path d="m10 14 3 3 5-6"/></svg><b>2 yıl garanti</b><span>İskelet ve mekanizmada</span></div>
+      <div class="hizmet"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="22" height="15" rx="2.5"/><path d="M3 12h22M7 17h5"/></svg><b>Peşin fiyatına 9 taksit</b><span>Anlaşmalı kredi kartlarına</span></div>
+    </div></div>
+
+    <div class="kap bolum">
+      <div class="bolum-bas">
+        <div class="sol"><span class="etiket">Yaşam alanları</span><h2>Odanıza göre keşfedin</h2></div>
+        <a href="#koleksiyon">Tüm ürünler</a>
+      </div>
+      <div class="alanlar" id="alanlar"></div>
+    </div>
+
+    <div class="kap bolum" style="padding-top:0">
+      <div class="bolum-bas">
+        <div class="sol"><span class="etiket">Öne çıkanlar</span><h2>Bu sezon en çok bakılanlar</h2></div>
+        <div class="sekmeler" role="tablist">
+          <button class="sekme aktif" data-sekme="cok">Çok satanlar</button>
+          <button class="sekme" data-sekme="yeni">Yeni gelenler</button>
+          <button class="sekme" data-sekme="indirim">İndirimdekiler</button>
+        </div>
+      </div>
+      <div class="izgara" id="oneCikanlar"></div>
+    </div>
+
+    <section class="bant">
+      <div class="kap">
+        <div>
+          <span class="etiket">3D oda planlayıcı</span>
+          <h2 style="margin-top:12px">Ölçü alın, yerleştirin, karar verin.</h2>
+          <ol class="adimlar">
+            <li><b>Odanızın ölçülerini girin</b><p>Genişlik, uzunluk ve tavan yüksekliği yeterli. Zemin ve duvar rengini seçin.</p></li>
+            <li><b>Ürünleri sürükleyip yerleştirin</b><p>Mobilyalar gerçek ölçüleriyle gelir; duvara ya da birbirine çarpmaz, sığıp sığmadığını hemen görürsünüz.</p></li>
+            <li><b>Fotoğrafını çekin, sepete ekleyin</b><p>Gerçekçi ışıkla bir fotoğraf alın, beğendiğiniz düzenin tamamını tek tıkla sepete aktarın.</p></li>
+          </ol>
+          <a class="dugme vurgu" href="#planlayici">Planlayıcıyı aç</a>
+        </div>
+        <svg class="plan-cizim" viewBox="0 0 460 420" role="img" aria-label="450 × 500 cm oda planı: TV ünitesi, kanepe, berjer ve orta sehpa">
+          <g fill="none" stroke="var(--band-muted)" stroke-width="1">
+            <path d="M60 30h360M60 22v16M420 22v16" /><path d="M30 60v340M22 60h16M22 400h16" />
+          </g>
+          <text x="240" y="20" fill="var(--band-muted)" font-size="13" text-anchor="middle" font-family="Figtree, sans-serif">450 cm</text>
+          <text x="18" y="232" fill="var(--band-muted)" font-size="13" text-anchor="middle" font-family="Figtree, sans-serif" transform="rotate(-90 18 232)">500 cm</text>
+          <rect x="60" y="60" width="360" height="340" fill="none" stroke="var(--band-ink)" stroke-width="6"/>
+          <path d="M57 150v90" stroke="var(--band)" stroke-width="8"/><path d="M55 150v90M65 150v90" stroke="var(--band-muted)" stroke-width="1.5"/>
+          <rect x="143" y="66" width="195" height="42" rx="3" fill="var(--band-muted)" opacity=".35"/>
+          <text x="240" y="92" fill="var(--band-ink)" font-size="12" text-anchor="middle" font-family="Figtree, sans-serif">TV ünitesi · 244 cm</text>
+          <rect x="174" y="200" width="96" height="48" rx="3" fill="none" stroke="var(--band-ink)" stroke-width="1.5"/>
+          <text x="222" y="228" fill="var(--band-ink)" font-size="11" text-anchor="middle" font-family="Figtree, sans-serif">sehpa</text>
+          <rect x="140" y="292" width="145" height="66" rx="10" fill="#86c2ae" opacity=".9"/>
+          <text x="212" y="330" fill="#0f1513" font-size="12" font-weight="600" text-anchor="middle" font-family="Figtree, sans-serif">Chester · 181 cm</text>
+          <rect x="72" y="214" width="62" height="68" rx="10" fill="none" stroke="var(--band-ink)" stroke-width="1.5"/>
+          <text x="103" y="252" fill="var(--band-ink)" font-size="11" text-anchor="middle" font-family="Figtree, sans-serif">berjer</text>
+          <circle cx="212" cy="378" r="5" fill="#86c2ae"/>
+          <path d="M212 358v15" stroke="#86c2ae" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <g font-family="Figtree, sans-serif" font-size="11" fill="#86c2ae"><text x="292" y="330">42 cm</text></g>
+          <path d="M285 325h0M270 248v44" stroke="#86c2ae" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="276" y="275" fill="#86c2ae" font-size="11" font-family="Figtree, sans-serif">44 cm geçiş</text>
+        </svg>
+      </div>
+    </section>
+
+    <div class="kap bolum">
+      <div class="showroom">
+        <div class="kutu">
+          <span class="etiket">Showroom</span>
+          <h2>Dokunun, oturun, sonra karar verin.</h2>
+          <dl>
+            <dt>Adres</dt><dd>Örnek Mah. Mobilya Cad. No: 1, İnegöl / Bursa</dd>
+            <dt>Saatler</dt><dd>Pazartesi–Cumartesi 09:00–19:00 · Pazar 11:00–18:00</dd>
+            <dt>Telefon</dt><dd>0 (224) 000 00 00</dd>
+          </dl>
+          <p class="not">Adres ve telefon örnektir; her firma için kendi bilgileriyle değiştirilir.</p>
+        </div>
+        <div class="kutu ic-mimar">
+          <span class="etiket">Ücretsiz hizmet</span>
+          <h3>İç mimarımızla birlikte tasarlayın</h3>
+          <p>Planlayıcıda hazırladığınız düzeni mağazaya getirin; iç mimarımız ölçülerinizi kontrol etsin, kumaş ve renk önerisi versin.</p>
+          <a class="dugme kucuk" href="#planlayici" style="justify-self:start">Önce kendim deneyeyim</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KOLEKSİYON / KATEGORİ -->
+  <section data-gorunum="koleksiyon" hidden>
+    <div class="kap">
+      <div class="sayfa-bas">
+        <div class="kirinti"><a href="#anasayfa">Ana sayfa</a> / <span id="kolKirinti">Tüm ürünler</span></div>
+        <h1 id="kolBaslik">Tüm ürünler</h1>
+      </div>
+      <div class="filtre">
+        <div class="sekmeler" id="kolSekmeler"></div>
+        <label class="not">Sırala
+          <select id="siralama">
+            <option value="onerilen">Önerilen</option>
+            <option value="artan">Fiyat: düşükten yükseğe</option>
+            <option value="azalan">Fiyat: yüksekten düşüğe</option>
+          </select>
+        </label>
+      </div>
+      <div class="izgara" id="kolIzgara"></div>
+      <p class="bos-sonuc" id="kolBos" hidden>Aramanıza uygun ürün bulamadık. Başka bir kelime deneyin ya da tüm ürünlere göz atın.</p>
+      <div style="height:64px"></div>
+    </div>
+  </section>
+
+  <!-- ÜRÜN -->
+  <section data-gorunum="urun" hidden>
+    <div class="kap">
+      <div class="sayfa-bas"><div class="kirinti" id="urunKirinti"></div></div>
+      <div class="urun">
+        <div class="urun-gorsel">
+          <div class="katman"><img id="urunResim" alt=""><div class="ton" id="urunTon"></div></div>
+          <div class="uc-dugmeler">
+            <button class="dugme kucuk" id="urunIncele">360° incele</button>
+            <button class="dugme kucuk cizgi" id="urunDene" style="background:var(--surface)">Odanda dene</button>
+          </div>
+        </div>
+        <div class="urun-bilgi">
+          <div style="display:grid;gap:10px">
+            <div id="urunRozet"></div>
+            <h1 id="urunAd" style="font-size:clamp(2rem,3.4vw,2.8rem)"></h1>
+            <div class="fiyat" id="urunFiyat"></div>
+            <div class="taksit" id="urunTaksit"></div>
+          </div>
+          <p id="urunAciklama" style="color:var(--muted)"></p>
+          <div class="renk-sec" id="urunRenkBolum">
+            <div><span class="etiket">Kumaş tonu</span> · <span id="urunRenkAd"></span></div>
+            <div class="renkler" id="urunRenkler"></div>
+          </div>
+          <dl class="ozellikler" id="urunOzellik"></dl>
+          <div class="eylemler">
+            <button class="dugme" id="urunSepet">Sepete ekle</button>
+            <button class="dugme cizgi" id="urunIncele2">3D incele</button>
+            <button class="dugme cizgi" id="urunDene2">Odanda dene</button>
+          </div>
+          <div class="teslimat">
+            <div><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8h13v11H3zM16 12h5l4 4v3h-9"/><circle cx="8" cy="20.5" r="2.2"/><circle cx="20" cy="20.5" r="2.2"/></svg>Tahmini teslimat: 10–14 iş günü, ücretsiz kurulum dahil</div>
+            <div><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3 5 7v6c0 6 4 10 9 12 5-2 9-6 9-12V7l-9-4Z"/></svg>2 yıl garanti · 14 gün içinde koşulsuz iade</div>
+          </div>
+        </div>
+      </div>
+      <div class="bolum-bas"><div class="sol"><span class="etiket">Birlikte iyi gider</span><h2>Odayı tamamlayın</h2></div></div>
+      <div class="izgara" id="benzerler"></div>
+      <div style="height:64px"></div>
+    </div>
+  </section>
+
+  <!-- PLANLAYICI -->
+  <section data-gorunum="planlayici" hidden>
+    <div class="kap">
+      <div class="planlayici-bas">
+        <div>
+          <span class="etiket">3D oda planlayıcı</span>
+          <h1 style="font-size:clamp(1.9rem,3.2vw,2.6rem);margin-top:8px">Odanı tasarla</h1>
+          <p>Ölçülerini gir, ürünleri sürükle, halkayla istediğin açıya çevir. Beğendiğin düzeni "Odadakileri sepete ekle" ile sepete aktar.</p>
+        </div>
+        <a class="dugme cizgi kucuk" href="#koleksiyon">Ürünlere dön</a>
+      </div>
+      <div class="planlayici-cerceve" id="planlayiciCerceve"></div>
+    </div>
+  </section>
+
+  <!-- MAĞAZALAR -->
+  <section data-gorunum="magazalar" hidden>
+    <div class="kap">
+      <div class="sayfa-bas"><div class="kirinti"><a href="#anasayfa">Ana sayfa</a> / Mağazalar</div><h1>Showroom ve iletişim</h1></div>
+      <div class="showroom" style="padding-bottom:64px">
+        <div class="kutu">
+          <h3>Merkez showroom</h3>
+          <dl>
+            <dt>Adres</dt><dd>Örnek Mah. Mobilya Cad. No: 1, İnegöl / Bursa</dd>
+            <dt>Saatler</dt><dd>Pazartesi–Cumartesi 09:00–19:00 · Pazar 11:00–18:00</dd>
+            <dt>Telefon</dt><dd>0 (224) 000 00 00</dd>
+            <dt>E-posta</dt><dd>bilgi@ornekmobilya.example</dd>
+          </dl>
+          <p class="not">Bu bilgiler örnektir; site her mobilyacı için kendi adresi, telefonu ve logosuyla kurulur.</p>
+        </div>
+        <div class="kutu ic-mimar">
+          <h3>Randevu ile iç mimar desteği</h3>
+          <p>Planlayıcıda hazırladığınız düzenin fotoğrafını çekip mağazaya gelirken yanınızda getirin. İç mimarımız ölçüleri kontrol eder, kumaş ve renk seçiminde yardımcı olur.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="alt-bilgi">
+  <div class="kap">
+    <div style="display:grid;gap:12px;align-content:start">
+      <a class="logo" href="#anasayfa"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="8" fill="var(--accent)"/><path d="M9 20v-5.5a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3V20M7.5 20h17M10 20v3M22 20v3" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"/></svg>Örnek Mobilya</a>
+      <p class="not" style="max-width:36ch">Gerçek ölçülü 3D modellerle, almadan önce odanızda deneyebileceğiniz mobilyalar.</p>
+    </div>
+    <div><h4>Kategoriler</h4><ul><li><a href="#oturma-odasi">Oturma Odası</a></li><li><a href="#yemek-odasi">Yemek Odası</a></li><li><a href="#depolama">Depolama</a></li><li><a href="#dekorasyon">Dekorasyon</a></li></ul></div>
+    <div><h4>Hizmetler</h4><ul><li><a href="#planlayici">3D oda planlayıcı</a></li><li>Ücretsiz teslimat ve kurulum</li><li>İç mimar desteği</li><li>2 yıl garanti</li></ul></div>
+    <div><h4>İletişim</h4><ul><li><a href="#magazalar">Showroom</a></li><li>0 (224) 000 00 00</li><li>Pzt–Cmt 09:00–19:00</li></ul></div>
+    <div class="telif"><span>© 2026 Örnek Mobilya · Tanıtım amaçlı örnek site, sipariş alınmaz.</span><span>3D modeller ve ürün görselleri: <a href="https://polyhaven.com" target="_blank" rel="noopener" style="text-decoration:underline">Poly Haven</a> (CC0)</span></div>
+  </div>
+</footer>
+
+<div class="perde" id="perde" hidden></div>
+<aside class="sepet" id="sepet" hidden aria-label="Sepet">
+  <header><h3>Sepetiniz</h3><button class="kapat" id="sepetKapat" aria-label="Sepeti kapat">×</button></header>
+  <div class="liste" id="sepetListe"></div>
+  <footer>
+    <div class="toplam"><span>Toplam</span><span id="sepetToplam">0 ₺</span></div>
+    <div class="taksit" id="sepetTaksit"></div>
+    <button class="dugme vurgu" id="teklif">Mağazadan teklif iste</button>
+    <p class="not" id="teklifNot" hidden>Bu bir tanıtım sitesidir, sipariş alınmaz. Gerçek sitede bu adım ödeme sayfasına ya da mağaza randevusuna bağlanır.</p>
+  </footer>
+</aside>
+<div id="bildirim" role="status"></div>
+
+<script>
+// ---------- Ürünler (planlayıcıdaki adlarla aynı olmalı) ----------
+const TONLAR = [
+  { hex: '#ffffff', ad: 'Doğal' }, { hex: '#d9c7aa', ad: 'Bej' }, { hex: '#b7c6d8', ad: 'Buz mavisi' },
+  { hex: '#c3cfb3', ad: 'Adaçayı' }, { hex: '#dcb2a8', ad: 'Gül kurusu' }, { hex: '#9a9a9a', ad: 'Antrasit' },
+];
+const HALI_TONLARI = [{ hex: '#ffffff', ad: 'Krem' }, { hex: '#c9d3db', ad: 'Gri mavi' }, { hex: '#d8c3ad', ad: 'Kum' }, { hex: '#b9c4b0', ad: 'Yosun' }];
+const KATEGORILER = {
+  'oturma-odasi': 'Oturma Odası', 'yemek-odasi': 'Yemek Odası', depolama: 'Depolama', dekorasyon: 'Dekorasyon',
+};
+const URUNLER = [
+  { id: 'chester-kanepe', ad: 'Chester Kanepe', kat: 'oturma-odasi', fiyat: 34990, eski: 41990, cok: 1, g: 181, d: 82, y: 71,
+    malzeme: 'Hakiki deri döşeme, kayın iskelet, el işi kapitone', aciklama: 'Kıvrık kolçakları ve derin kapitone dikişleriyle zamansız bir İngiliz klasiği. Üç kişilik oturum, dolgun minder.' },
+  { id: 'klasik-kanepe', ad: 'Klasik Kanepe', kat: 'oturma-odasi', fiyat: 27990, yeni: 1, g: 157, d: 66, y: 80, renkler: TONLAR,
+    malzeme: 'Keten karışımlı kumaş, oyma ahşap çerçeve', aciklama: 'Oyma ahşap çerçeve ve yumuşak keten kumaş. Dar salonlar için 157 cm genişlikte iki kişilik kanepe.' },
+  { id: 'klasik-berjer', ad: 'Klasik Berjer', kat: 'oturma-odasi', fiyat: 12990, eski: 15290, cok: 3, g: 85, d: 77, y: 107, renkler: TONLAR, uzanti: 'webp',
+    malzeme: 'Keten karışımlı kumaş, oyma ahşap çerçeve', aciklama: 'Yüksek sırtlı, kavisli kolçaklı okuma berjeri. Klasik kanepeyle aynı kumaş seçenekleri.' },
+  { id: 'modern-berjer', ad: 'Modern Berjer', kat: 'oturma-odasi', fiyat: 14490, yeni: 1, g: 82, d: 99, y: 102,
+    malzeme: 'Masif meşe kasa, deri minderler', aciklama: 'Masif meşe kasa üzerinde kalın deri minderler. Yalın çizgili, dayanıklı bir dinlenme koltuğu.' },
+  { id: 'puf', ad: 'Puf', kat: 'oturma-odasi', fiyat: 4990, g: 88, d: 62, y: 62,
+    malzeme: 'Deri görünümlü döşeme, sünger dolgu', aciklama: 'Ayak uzatmak ya da ek oturum için çok amaçlı puf.' },
+  { id: 'orta-sehpa', ad: 'Orta Sehpa', kat: 'oturma-odasi', fiyat: 6490, eski: 7690, cok: 2, g: 120, d: 60, y: 39,
+    malzeme: 'Beton görünümlü tabla, masif ahşap ayaklar', aciklama: 'Beton dokulu tabla ile sıcak ahşap ayakların buluştuğu alçak orta sehpa.' },
+  { id: 'yan-sehpa', ad: 'Yan Sehpa', kat: 'oturma-odasi', fiyat: 2990, g: 55, d: 45, y: 55,
+    malzeme: 'Masif çam, alt raflı', aciklama: 'Kanepe yanına alt raflı, sade ahşap yan sehpa.' },
+  { id: 'tv-unitesi', ad: 'TV Ünitesi', kat: 'oturma-odasi', fiyat: 18990, cok: 4, g: 244, d: 52, y: 68,
+    malzeme: 'Ceviz kaplama, çıtalı kapaklar, metal ayaklar', aciklama: '244 cm genişliğinde, çıtalı kapaklı, geniş depolamalı TV ünitesi.' },
+  { id: 'yemek-masasi', ad: 'Yemek Masası', kat: 'yemek-odasi', fiyat: 15990, yeni: 1, g: 106, d: 106, y: 76, cap: true,
+    malzeme: 'Masif ahşap, torna orta ayak', aciklama: 'Dört kişilik yuvarlak yemek masası. Orta ayak sayesinde sandalyeler rahatça yerleşir.' },
+  { id: 'sandalye', ad: 'Sandalye', kat: 'yemek-odasi', fiyat: 3490, eski: 3990, g: 43, d: 58, y: 97,
+    malzeme: 'Kapitone deri görünümlü döşeme, masif ayaklar', aciklama: 'Yüksek kapitone sırtlı yemek sandalyesi.' },
+  { id: 'kitaplik', ad: 'Kitaplık', kat: 'depolama', fiyat: 7490, g: 108, d: 37, y: 156,
+    malzeme: 'Masif ahşap, kumaş kutular', aciklama: 'Dokuz bölmeli açık kitaplık. Alt sırada kumaş saklama kutuları.' },
+  { id: 'saksi-bitki', ad: 'Saksı Bitkisi', kat: 'dekorasyon', fiyat: 1290, yeni: 1, g: 70, d: 66, y: 84,
+    malzeme: 'Pişmiş toprak saksı', aciklama: 'Köşeleri canlandıran, toprak saksıda geniş yapraklı bitki.' },
+  { id: 'hali', ad: 'Halı', kat: 'dekorasyon', fiyat: 3990, eski: 4690, g: 200, d: 290, renkler: HALI_TONLARI,
+    malzeme: 'Yün karışımlı dokuma', aciklama: 'Baklava desenli, çerçeve bordürlü 200 × 290 cm halı.' },
+];
+const urunBul = id => URUNLER.find(u => u.id === id);
+const gorsel = u => u.gorsel || `urunler/${u.id}.${u.uzanti || 'png'}`;
+const fiyatYaz = n => n.toLocaleString('tr-TR') + ' ₺';
+const yuzde = u => u.eski ? Math.round((1 - u.fiyat / u.eski) * 100) : 0;
+const $ = id => document.getElementById(id);
+
+// Halının fotoğrafı yok; planlayıcıdaki desenin aynısı kodla çizilir
+(function haliGorseli() {
+  const c = document.createElement('canvas');
+  c.width = 420; c.height = 560;
+  const g = c.getContext('2d');
+  g.save();
+  g.translate(210, 280); g.rotate(-0.12); g.translate(-160, -230);
+  g.shadowColor = 'rgba(0,0,0,0.18)'; g.shadowBlur = 24; g.shadowOffsetY = 10;
+  g.fillStyle = '#ebe6de'; g.fillRect(0, 0, 320, 460);
+  g.shadowColor = 'transparent';
+  g.strokeStyle = '#9c8f7d'; g.lineWidth = 12; g.strokeRect(18, 18, 284, 424);
+  g.lineWidth = 3; g.strokeRect(40, 40, 240, 380);
+  g.beginPath(); g.rect(48, 48, 224, 364); g.clip();
+  g.strokeStyle = 'rgba(120,105,88,0.5)'; g.lineWidth = 2;
+  for (let i = -460; i < 780; i += 36) {
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 460, 460); g.stroke();
+    g.beginPath(); g.moveTo(i, 460); g.lineTo(i + 460, 0); g.stroke();
+  }
+  g.restore();
+  urunBul('hali').gorsel = c.toDataURL('image/png');
+})();
+
+// ---------- Ürün kartı ----------
+function kartHtml(u) {
+  const rozet = u.eski ? `<span class="rozet indirim">%${yuzde(u)} indirim</span>` : u.yeni ? '<span class="rozet yeni">Yeni</span>' : '';
+  const olcu = u.cap ? `Ø ${u.g} × ${u.y} cm` : u.y ? `${u.g} × ${u.d} × ${u.y} cm` : `${u.g} × ${u.d} cm`;
+  return `<a class="kart" href="#urun-${u.id}">
+    <figure><img src="${gorsel(u)}" alt="${u.ad}" loading="lazy">${rozet}<span class="uc-boyut">3D</span></figure>
+    <div class="bilgi"><span class="ad">${u.ad}</span><span class="olcu">${olcu}</span>
+    <span class="fiyat"><b>${fiyatYaz(u.fiyat)}</b>${u.eski ? `<s>${fiyatYaz(u.eski)}</s>` : ''}</span></div></a>`;
+}
+function izgaraDoldur(el, liste) { el.innerHTML = liste.map(kartHtml).join(''); }
+
+// ---------- Ana sayfa ----------
+function alanlariCiz() {
+  const temsil = { 'oturma-odasi': 'chester-kanepe', 'yemek-odasi': 'yemek-masasi', depolama: 'kitaplik', dekorasyon: 'saksi-bitki' };
+  $('alanlar').innerHTML = Object.entries(KATEGORILER).map(([k, ad]) => {
+    const sayi = URUNLER.filter(u => u.kat === k).length;
+    return `<a class="alan" href="#${k}"><div><h3>${ad}</h3><span>${sayi} ürün</span></div><img src="${gorsel(urunBul(temsil[k]))}" alt="" loading="lazy"></a>`;
+  }).join('');
+}
+const SEKMELER = {
+  cok: () => URUNLER.filter(u => u.cok).sort((a, b) => a.cok - b.cok),
+  yeni: () => URUNLER.filter(u => u.yeni),
+  indirim: () => URUNLER.filter(u => u.eski),
+};
+document.querySelectorAll('[data-sekme]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('[data-sekme]').forEach(x => x.classList.toggle('aktif', x === b));
+  izgaraDoldur($('oneCikanlar'), SEKMELER[b.dataset.sekme]().slice(0, 4));
+});
+
+// ---------- Koleksiyon ----------
+let arama = '';
+function koleksiyonCiz(yol) {
+  let liste = URUNLER.slice(), baslik = 'Tüm ürünler';
+  if (KATEGORILER[yol]) { liste = liste.filter(u => u.kat === yol); baslik = KATEGORILER[yol]; }
+  if (yol === 'indirim') { liste = liste.filter(u => u.eski); baslik = 'İndirimdekiler'; }
+  if (arama) {
+    const q = arama.toLocaleLowerCase('tr');
+    liste = liste.filter(u => (u.ad + ' ' + u.malzeme + ' ' + KATEGORILER[u.kat]).toLocaleLowerCase('tr').includes(q));
+    baslik = `“${arama}” için sonuçlar`;
+  }
+  const s = $('siralama').value;
+  if (s === 'artan') liste.sort((a, b) => a.fiyat - b.fiyat);
+  if (s === 'azalan') liste.sort((a, b) => b.fiyat - a.fiyat);
+  $('kolBaslik').textContent = baslik;
+  $('kolKirinti').textContent = baslik;
+  $('kolSekmeler').innerHTML = [['koleksiyon', 'Tümü'], ...Object.entries(KATEGORILER), ['indirim', 'İndirimde']]
+    .map(([k, ad]) => `<a class="sekme${k === yol ? ' aktif' : ''}" href="#${k}" style="display:inline-grid;place-items:center;text-decoration:none">${ad}</a>`).join('');
+  izgaraDoldur($('kolIzgara'), liste);
+  $('kolBos').hidden = liste.length > 0;
+}
+$('siralama').onchange = () => koleksiyonCiz(aktifYol);
+$('aramaForm').onsubmit = e => {
+  e.preventDefault();
+  arama = $('aramaKutu').value.trim();
+  if (location.hash === '#koleksiyon') koleksiyonCiz('koleksiyon'); else location.hash = 'koleksiyon';
+};
+
+// ---------- Ürün sayfası ----------
+let urun = null, urunRenk = null;
+function urunCiz(u) {
+  urun = u;
+  urunRenk = u.renkler ? u.renkler[0] : null;
+  $('urunKirinti').innerHTML = `<a href="#anasayfa">Ana sayfa</a> / <a href="#${u.kat}">${KATEGORILER[u.kat]}</a> / ${u.ad}`;
+  $('urunResim').src = gorsel(u);
+  $('urunResim').alt = u.ad;
+  $('urunTon').style.webkitMaskImage = $('urunTon').style.maskImage = `url("${gorsel(u)}")`;
+  $('urunRozet').innerHTML = u.eski ? `<span class="rozet indirim">%${yuzde(u)} indirim</span>` : u.yeni ? '<span class="rozet yeni">Yeni</span>' : '';
+  $('urunAd').textContent = u.ad;
+  $('urunFiyat').innerHTML = `<b>${fiyatYaz(u.fiyat)}</b>${u.eski ? `<s>${fiyatYaz(u.eski)}</s><span class="yuzde">${fiyatYaz(u.eski - u.fiyat)} kazanç</span>` : ''}`;
+  $('urunTaksit').textContent = `Peşin fiyatına 9 × ${fiyatYaz(Math.ceil(u.fiyat / 9))}`;
+  $('urunAciklama').textContent = u.aciklama;
+  const olcu = u.cap ? [['Çap', u.g], ['Yükseklik', u.y]] : u.y ? [['Genişlik', u.g], ['Derinlik', u.d], ['Yükseklik', u.y]] : [['En', u.g], ['Boy', u.d]];
+  $('urunOzellik').innerHTML = olcu.map(([a, b]) => `<dt>${a}</dt><dd>${b} cm</dd>`).join('') + `<dt>Malzeme</dt><dd>${u.malzeme}</dd>`;
+  $('urunRenkBolum').hidden = !u.renkler;
+  if (u.renkler) {
+    $('urunRenkler').innerHTML = u.renkler.map((r, i) => `<button class="renk${i ? '' : ' secili'}" style="background:${r.hex}" title="${r.ad}" aria-label="${r.ad}" data-i="${i}"></button>`).join('');
+    $('urunRenkler').querySelectorAll('.renk').forEach(b => b.onclick = () => {
+      urunRenk = u.renkler[+b.dataset.i];
+      $('urunRenkler').querySelectorAll('.renk').forEach(x => x.classList.toggle('secili', x === b));
+      tonUygula();
+    });
+  }
+  tonUygula();
+  const benzer = URUNLER.filter(x => x.kat === u.kat && x !== u).concat(URUNLER.filter(x => x.kat !== u.kat)).slice(0, 4);
+  izgaraDoldur($('benzerler'), benzer);
+}
+function tonUygula() {
+  $('urunRenkAd').textContent = urunRenk ? urunRenk.ad : '';
+  $('urunTon').style.background = urunRenk && urunRenk.hex !== '#ffffff' ? urunRenk.hex : 'transparent';
+}
+const sepeteEkleUrun = () => { sepeteEkle(urun.id, urunRenk?.ad); bildir(`${urun.ad} sepete eklendi`); };
+$('urunSepet').onclick = sepeteEkleUrun;
+const incele = () => planlayiciyaGonder({ tip: 'incele', urun: urun.ad, renk: urunRenk?.hex }, true);
+const dene = () => planlayiciyaGonder({ tip: 'ekle', urun: urun.ad, renk: urunRenk?.hex }, true);
+$('urunIncele').onclick = $('urunIncele2').onclick = incele;
+$('urunDene').onclick = $('urunDene2').onclick = dene;
+
+// ---------- Planlayıcı (ayrı sayfa, iframe içinde; yalnızca ilk ihtiyaçta yüklenir) ----------
+let cerceve = null, planlayiciHazir = false;
+const kuyruk = [];
+function planlayiciYukle() {
+  if (cerceve) return;
+  cerceve = document.createElement('iframe');
+  cerceve.src = 'planlayici.html';
+  cerceve.title = '3D oda planlayıcı';
+  cerceve.allow = 'fullscreen';
+  $('planlayiciCerceve').appendChild(cerceve);
+}
+function planlayiciyaGonder(mesaj, git) {
+  planlayiciYukle();
+  if (planlayiciHazir) cerceve.contentWindow.postMessage(mesaj, '*'); else kuyruk.push(mesaj);
+  if (git) location.hash = 'planlayici';
+}
+addEventListener('message', e => {
+  if (!cerceve || e.source !== cerceve.contentWindow || !e.data) return;
+  if (e.data.tip === 'hazir') {
+    planlayiciHazir = true;
+    kuyruk.splice(0).forEach(m => cerceve.contentWindow.postMessage(m, '*'));
+  } else if (e.data.tip === 'sepet') {
+    for (const { ad, renk } of e.data.urunler) {
+      const u = URUNLER.find(x => x.ad === ad);
+      if (!u) continue;
+      const ton = u.renkler?.find(r => r.hex === renk);
+      sepeteEkle(u.id, ton?.ad);
+    }
+    sepetAc();
+  }
+});
+
+// ---------- Sepet (yalnızca bu tarayıcıda saklanır) ----------
+const SEPET_ANAHTAR = 'ornek-mobilya-sepet';
+let sepet = [];
+try { sepet = JSON.parse(localStorage.getItem(SEPET_ANAHTAR)) || []; } catch { sepet = []; }
+function sepetKaydet() {
+  try { localStorage.setItem(SEPET_ANAHTAR, JSON.stringify(sepet)); } catch {}
+  sepetCiz();
+}
+function sepeteEkle(id, renk) {
+  const var_ = sepet.find(s => s.id === id && s.renk === renk);
+  if (var_) var_.adet++; else sepet.push({ id, renk, adet: 1 });
+  sepetKaydet();
+}
+function sepetCiz() {
+  sepet = sepet.filter(s => urunBul(s.id) && s.adet > 0);
+  const adet = sepet.reduce((t, s) => t + s.adet, 0);
+  const toplam = sepet.reduce((t, s) => t + urunBul(s.id).fiyat * s.adet, 0);
+  $('sepetSayac').textContent = adet;
+  $('sepetToplam').textContent = fiyatYaz(toplam);
+  $('sepetTaksit').textContent = toplam ? `Peşin fiyatına 9 × ${fiyatYaz(Math.ceil(toplam / 9))}` : '';
+  $('teklif').hidden = !sepet.length;
+  $('sepetListe').innerHTML = sepet.length ? sepet.map((s, i) => {
+    const u = urunBul(s.id);
+    return `<div class="sepet-satir">
+      <figure><img src="${gorsel(u)}" alt=""></figure>
+      <div><div class="ad">${u.ad}</div><div class="alt">${s.renk ? s.renk + ' · ' : ''}${fiyatYaz(u.fiyat)}</div>
+        <div class="adet"><button data-i="${i}" data-d="-1" aria-label="Azalt">−</button><span>${s.adet}</span><button data-i="${i}" data-d="1" aria-label="Artır">+</button></div></div>
+      <div class="sag"><b>${fiyatYaz(u.fiyat * s.adet)}</b><button class="kaldir" data-k="${i}">Kaldır</button></div>
+    </div>`;
+  }).join('') : '<p class="not" style="padding:24px 0">Sepetiniz boş. Ürün sayfalarından ya da 3D planlayıcıdan ürün ekleyebilirsiniz.</p>';
+  $('sepetListe').querySelectorAll('[data-d]').forEach(b => b.onclick = () => { sepet[+b.dataset.i].adet += +b.dataset.d; sepetKaydet(); });
+  $('sepetListe').querySelectorAll('[data-k]').forEach(b => b.onclick = () => { sepet.splice(+b.dataset.k, 1); sepetKaydet(); });
+}
+function sepetAc() { $('sepet').hidden = $('perde').hidden = false; $('teklifNot').hidden = true; }
+function sepetKapat() { $('sepet').hidden = $('perde').hidden = true; }
+$('sepetAc').onclick = sepetAc;
+$('sepetKapat').onclick = $('perde').onclick = sepetKapat;
+addEventListener('keydown', e => { if (e.key === 'Escape') sepetKapat(); });
+$('teklif').onclick = () => { $('teklifNot').hidden = false; };
+
+let bildirimZaman;
+function bildir(metin) {
+  const b = $('bildirim');
+  b.textContent = metin;
+  b.classList.add('goster');
+  clearTimeout(bildirimZaman);
+  bildirimZaman = setTimeout(() => b.classList.remove('goster'), 2400);
+}
+
+// ---------- Kapak: Blender'da render edilmiş montaj animasyonu (160 kare, 45 fps, tek MP4, ~3,5 sn) ----------
+// Video sessiz ve kendiliğinden oynar; yazılar videonun o anki karesine göre değişir.
+const montaj = (() => {
+  const KARE = 160, FPS = 45;
+  const bolum = $('montajBolum'), video = $('montajVideo'), tekrar = $('montajTekrar');
+  const adimlar = [...bolum.querySelectorAll('.montaj-adim')];
+  const basKareleri = adimlar.map(a => +a.dataset.bas);
+  const baslik = document.querySelector('.baslik');
+  new ResizeObserver(() => bolum.style.setProperty('--ust', baslik.offsetHeight + 'px')).observe(baslik);
+
+  // Başlangıç karesi bu kareye en yakın (ve geçilmiş) olan yazı görünür
+  function goster(k) {
+    let a = -1;
+    basKareleri.forEach((b, i) => { if (k >= b && (a < 0 || b > basKareleri[a])) a = i; });
+    adimlar.forEach((el, i) => el.classList.toggle('gorunur', i === a));
+  }
+  function izle() {
+    goster(Math.min(KARE - 1, Math.floor(video.currentTime * FPS)));
+    if (!video.paused && !video.ended) requestAnimationFrame(izle);
+  }
+  video.addEventListener('play', () => { tekrar.hidden = true; requestAnimationFrame(izle); });
+  video.addEventListener('ended', () => { goster(KARE - 1); tekrar.textContent = '↻ Tekrar oynat'; tekrar.hidden = false; });
+  tekrar.onclick = () => { video.currentTime = 0; video.play().catch(() => {}); };
+
+  // Telefonlar sessiz videoyu ancak bu özelliklerin hepsi kod tarafından da açıkça verilirse kendiliğinden oynatır
+  video.muted = video.defaultMuted = true;
+  video.playsInline = true;
+  for (const a of ['muted', 'playsinline', 'webkit-playsinline']) video.setAttribute(a, '');
+
+  // Siteyi barındıran sunucu videoyu parça parça (byte aralığıyla) vermiyor; Safari ve birçok mobil tarayıcı
+  // bu durumda videoyu hiç başlatmıyor. Bu yüzden video önce tek seferde indirilir ve hafızadan (blob) oynatılır.
+  async function videoKaynagi() {
+    try {
+      const yanit = await fetch('montaj/kapak.mp4');
+      if (!yanit.ok) throw new Error(yanit.status);
+      const veri = await yanit.blob();
+      video.src = URL.createObjectURL(new Blob([veri], { type: 'video/mp4' }));
+    } catch {
+      video.src = 'montaj/kapak.mp4';
+    }
+  }
+
+  // Yedek: video hiç başlamazsa (güç/veri tasarrufu modu, eski tarayıcı) animasyon resim karelerinden oynatılır.
+  // Her 2. kare kullanılır (80 resim); hepsi indikten sonra oynatma başlar, böylece takılmaz.
+  let yedekte = false;
+  async function yedekOynat() {
+    if (yedekte) return;
+    yedekte = true;
+    video.pause();
+    const sira = [];
+    for (let i = 0; i < KARE; i += 2) sira.push(i);
+    if (sira[sira.length - 1] !== KARE - 1) sira.push(KARE - 1);
+    const resimler = await Promise.all(sira.map(i => new Promise(coz => {
+      const img = new Image();
+      img.onload = () => coz(img);
+      img.onerror = () => coz(null);
+      img.src = `montaj/kare_${String(i + 1).padStart(4, '0')}.jpg`;
+    })));
+    const tuval = document.createElement('canvas');
+    tuval.className = 'montaj-yedek';
+    tuval.setAttribute('aria-hidden', 'true');
+    video.after(tuval);
+    video.hidden = true;
+    const cx = tuval.getContext('2d');
+    const boyutla = () => {
+      const o = Math.min(devicePixelRatio || 1, 2);
+      tuval.width = Math.round(tuval.clientWidth * o);
+      tuval.height = Math.round(tuval.clientHeight * o);
+    };
+    boyutla();
+    let son = null;
+    const ciz = img => {
+      if (!img) return;
+      son = img;
+      const tw = tuval.width, th = tuval.height;
+      const olcek = Math.max(tw / img.naturalWidth, th / img.naturalHeight);
+      const w = img.naturalWidth * olcek, h = img.naturalHeight * olcek;
+      cx.drawImage(img, (tw - w) * (tw / th < 1 ? 0.62 : 0.5), (th - h) / 2, w, h);
+    };
+    new ResizeObserver(() => { boyutla(); ciz(son); }).observe(tuval);
+    const oyna = () => {
+      tekrar.hidden = true;
+      const t0 = performance.now(), sure = (KARE / FPS) * 1000;
+      const adim = t => {
+        const p = Math.min(1, (t - t0) / sure);
+        ciz(resimler[Math.round(p * (resimler.length - 1))]);
+        goster(Math.round(p * (KARE - 1)));
+        if (p < 1) requestAnimationFrame(adim);
+        else { tekrar.textContent = '↻ Tekrar oynat'; tekrar.hidden = false; }
+      };
+      requestAnimationFrame(adim);
+    };
+    tekrar.onclick = oyna;
+    if (azHareket) {
+      ciz(resimler[resimler.length - 1]);
+      goster(KARE - 1);
+      tekrar.textContent = '▶ Animasyonu oynat';
+      tekrar.hidden = false;
+    } else oyna();
+  }
+
+  goster(0);
+  const azHareket = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  (async () => {
+    // Test için: adreste ?yedek varsa video atlanır ve doğrudan resim kareleri kullanılır
+    if (new URLSearchParams(location.search).has('yedek')) return yedekOynat();
+    await videoKaynagi();
+    if (azHareket) {
+      // Hareket istemeyenlere doğrudan monte edilmiş hali göster
+      video.addEventListener('loadedmetadata', () => { video.currentTime = video.duration; }, { once: true });
+      goster(KARE - 1);
+      tekrar.textContent = '▶ Animasyonu oynat';
+      tekrar.hidden = false;
+      return;
+    }
+    // Oynatma komutu hemen verilir (iPhone videoyu bu komut gelmeden hazırlamaz).
+    // 3,5 saniye içinde başlamazsa resim karelerine geçilir.
+    // Tarayıcı videoyu çözemezse ya da kendiliğinden oynatmayı engellerse bunu hemen bildirir: o zaman beklemeden yedeğe geç.
+    let basladi = false;
+    video.addEventListener('playing', () => { basladi = true; }, { once: true });
+    video.addEventListener('error', () => { if (!basladi) yedekOynat(); }, { once: true });
+    video.play().catch(e => { if (e.name !== 'AbortError' && !basladi) yedekOynat(); });
+    setTimeout(() => { if (!basladi && !video.ended) yedekOynat(); }, 3500);
+  })();
+  return { yenile: () => {} };
+})();
+
+// ---------- Yönlendirme: adres çubuğundaki #parça hangi görünümün açılacağını belirler ----------
+let aktifYol = '';
+// Site her açıldığında kapakla (ana sayfa) başlar; adreste kalmış eski bir bölüm (#koleksiyon vb.) dikkate alınmaz.
+// Sonraki geçişler menüden hash ile yapılır.
+let ilkAcilis = true;
+function yonlendir() {
+  const yol = ilkAcilis ? 'anasayfa' : location.hash.slice(1) || 'anasayfa';
+  // Adreste eski bölüm kalırsa aynı menü bağlantısına tıklamak tepki vermez; adres de ana sayfaya çekilir
+  if (ilkAcilis && location.hash && location.hash !== '#anasayfa') {
+    try { history.replaceState(null, '', location.pathname + location.search + '#anasayfa'); } catch {}
+  }
+  ilkAcilis = false;
+  let gorunum = 'anasayfa';
+  if (yol === 'koleksiyon' || yol === 'indirim' || KATEGORILER[yol]) { gorunum = 'koleksiyon'; koleksiyonCiz(yol); }
+  else if (yol.startsWith('urun-') && urunBul(yol.slice(5))) { gorunum = 'urun'; urunCiz(urunBul(yol.slice(5))); }
+  else if (yol === 'planlayici') { gorunum = 'planlayici'; planlayiciYukle(); }
+  else if (yol === 'magazalar') gorunum = 'magazalar';
+  if (yol !== 'koleksiyon') { arama = ''; $('aramaKutu').value = ''; }
+  aktifYol = yol;
+  document.querySelectorAll('[data-gorunum]').forEach(s => s.hidden = s.dataset.gorunum !== gorunum);
+  document.querySelectorAll('nav.menu a').forEach(a => a.classList.toggle('aktif', a.dataset.yol === yol));
+  scrollTo({ top: 0, behavior: 'instant' });
+  montaj.yenile();
+}
+addEventListener('hashchange', yonlendir);
+
+// ---------- Başlangıç ----------
+alanlariCiz();
+izgaraDoldur($('oneCikanlar'), SEKMELER.cok().slice(0, 4));
+sepetCiz();
+yonlendir();
+</script>

@@ -4,6 +4,8 @@ Mobilya üreticileri ve mağazaları için hazırlanmış bir demo. Müşteri mo
 inceleyebiliyor, kendi odasına yerleştirebiliyor ve ölçüye özel üretimin nasıl çalıştığını bir montaj
 animasyonunda görüyor. Marka adı, ürünler, fiyatlar ve iletişim bilgileri örnektir; her firma için değiştirilir.
 
+**Canlı site:** https://kazim1773.github.io/ornek-mobilya-3d/
+
 ## İçerik
 
 | Klasör / dosya | Ne var |
@@ -26,6 +28,16 @@ python araclar/sunucu.py 8765
 ```
 
 Sonra tarayıcıda `http://localhost:8765/site/magaza.html` adresini açın.
+
+## GitHub Pages
+
+Site GitHub Pages'te `main` dalının kökünden yayınlanır; kökteki `index.html` ziyaretçiyi `site/`'e yönlendirir.
+`site/magaza.html` belge iskeleti olmadan yazıldığı için (claude.ai yayını bunu kendisi ekler) Pages için
+`site/index.html` üretilir. `magaza.html` her değiştiğinde:
+
+```bash
+python araclar/pages_hazirla.py
+```
 
 ## Montaj animasyonunu yeniden render etme
 
