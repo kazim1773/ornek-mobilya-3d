@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Model ölçüleri</title>
+<pre id="cikti">ölçülüyor…</pre>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const adlar = ['klasik-kanepe','chester-kanepe','klasik-berjer','modern-berjer','puf','orta-sehpa','yan-sehpa','yemek-masasi','sandalye','tv-unitesi','kitaplik','saksi-bitki'];
+const yukle = new GLTFLoader();
+const satirlar = [];
+for (const ad of adlar) {
+  const g = await yukle.loadAsync(`../modeller/${ad}.glb`);
+  const b = new THREE.Box3().setFromObject(g.scene), s = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
+  let ucgen = 0;
+  g.scene.traverse(o => { if (o.isMesh) ucgen += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
+  satirlar.push(`${ad}: G ${s.x.toFixed(3)} D ${s.z.toFixed(3)} Y ${s.y.toFixed(3)} | merkez x ${c.x.toFixed(3)} z ${c.z.toFixed(3)} minY ${b.min.y.toFixed(3)} | ${Math.round(ucgen)} üçgen`);
+}
+document.getElementById('cikti').textContent = satirlar.join('\n');
+</script>

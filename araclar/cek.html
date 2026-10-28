@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Kapak fotoğrafı çek</title>
+<style>body { margin: 0; font: 14px system-ui; } iframe { border: 0; width: 1600px; height: 900px; display: block; } p { margin: 8px; }</style>
+<p id="durum">Planlayıcı yükleniyor…</p>
+<iframe id="cerceve" src="../site/planlayici.html"></iframe>
+<script>
+// Planlayıcıyı açar, kamerayı oda içinde göz hizasına koyar, gerçekçi fotoğraf çekip site/gorseller/salon.jpg olarak kaydeder.
+const cerceve = document.getElementById('cerceve'), durum = document.getElementById('durum');
+const params = new URLSearchParams(location.search);
+const konum = (params.get('konum') || '1.9,1.4,-2.2').split(',').map(Number);
+const hedef = (params.get('hedef') || '-0.6,0.45,1.0').split(',').map(Number);
+const ad = params.get('ad') || 'salon';
+addEventListener('message', async e => {
+  if (e.source !== cerceve.contentWindow) return;
+  if (e.data.tip === 'hazir') {
+    cerceve.contentWindow.postMessage({ tip: 'kamera', konum, hedef }, '*');
+    durum.textContent = 'Fotoğraf çekiliyor…';
+    setTimeout(() => cerceve.contentWindow.postMessage({ tip: 'foto' }, '*'), 800);
+  } else if (e.data.tip === 'foto') {
+    const blob = await (await fetch(e.data.url)).blob();
+    const yanit = await fetch(`/kaydet/${ad}.jpg`, { method: 'POST', body: blob });
+    durum.textContent = yanit.ok ? `Kaydedildi: site/gorseller/${ad}.jpg (${Math.round(blob.size / 1024)} KB)` : 'Kaydedilemedi';
+  }
+});
+</script>

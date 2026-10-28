@@ -1,0 +1,1289 @@
+<meta charset="utf-8">
+<title>Oda Planlayıcı</title>
+<style>
+  /* Yerleşim: solda ürün/oda paneli, sağda tam yükseklikte 3D sahne; dar ekranda sahne üstte, panel altta */
+  :root {
+    --bg: #f3f4f2;
+    --panel: #ffffff;
+    --field: #ffffff;
+    --ink: #1d2421;
+    --muted: #6b746f;
+    --line: #dfe3e0;
+    --accent: #1f6f5c;
+    --accent-soft: #e3f0ec;
+    --danger: #b42318;
+    --toast-bg: #7a1f16;
+    --toast-fg: #ffffff;
+    --tag-bg: #1d2421;
+    --tag-fg: #ffffff;
+    --scene: #e7eae8;
+    --thumb: #eef0ee;
+    --veil: rgba(20, 24, 22, 0.55);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151917; --panel: #1c211f; --field: #232927; --ink: #e8ece9; --muted: #9aa59f;
+      --line: #2f3633; --accent: #5cbfa2; --accent-soft: #1f3530; --danger: #f07167;
+      --toast-bg: #8f2a20; --toast-fg: #ffffff; --tag-bg: #e8ece9; --tag-fg: #151917; --scene: #2a302d;
+      --thumb: #2a302d; --veil: rgba(0, 0, 0, 0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151917; --panel: #1c211f; --field: #232927; --ink: #e8ece9; --muted: #9aa59f;
+    --line: #2f3633; --accent: #5cbfa2; --accent-soft: #1f3530; --danger: #f07167;
+    --toast-bg: #8f2a20; --toast-fg: #ffffff; --tag-bg: #e8ece9; --tag-fg: #151917; --scene: #2a302d;
+    --thumb: #2a302d; --veil: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; background: var(--bg); color: var(--ink);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  aside {
+    width: 330px; flex: none; height: 100%; overflow-y: auto;
+    background: var(--panel); border-right: 1px solid var(--line);
+  }
+  header { padding: 18px 20px 14px; border-bottom: 1px solid var(--line); }
+  header .firma { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+  header .alt { color: var(--muted); font-size: 13px; }
+  section { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  h2 { margin: 0 0 10px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .olcu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  label { display: block; font-size: 12px; color: var(--muted); }
+  input[type=number], select {
+    width: 100%; margin-top: 3px; padding: 7px 8px; font: inherit; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; background: var(--field);
+  }
+  .satir { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+  .satir > label { flex: 1; }
+  .renkler { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .renk {
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--panel); cursor: pointer;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+  .renk.secili { box-shadow: 0 0 0 2px var(--accent); }
+  .katalog { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .urun {
+    text-align: left; padding: 6px 6px 9px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--field); font: inherit; color: inherit; cursor: pointer;
+  }
+  .urun:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .urun img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: 6px; background: var(--thumb); margin-bottom: 6px; }
+  .urun b, .urun span { padding: 0 4px; }
+  .urun b { display: block; font-size: 13px; font-weight: 600; }
+  .urun span { display: block; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .butonlar { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  button.btn {
+    padding: 7px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--field);
+    font: inherit; font-size: 13px; color: inherit; cursor: pointer;
+  }
+  button.btn:hover { border-color: var(--ink); }
+  button.btn:focus-visible, .urun:focus-visible, .renk:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.btn.sil, button.btn.onay { color: var(--danger); }
+  button.btn.onay { border-color: var(--danger); }
+  button.btn.aktif, button.btn.ana { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .aci { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+  .aci input { flex: 1; min-width: 0; accent-color: var(--accent); }
+  .aci output { width: 38px; text-align: right; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .secili-ad { font-weight: 600; font-size: 15px; }
+  .mesafe { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .mesafe b { color: var(--ink); font-weight: 600; }
+  ul.liste { list-style: none; margin: 0; padding: 0; }
+  ul.liste li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; cursor: pointer; }
+  ul.liste li.secili { color: var(--accent); font-weight: 600; }
+  ul.liste li .fiyat { font-variant-numeric: tabular-nums; }
+  .toplam { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .bos { color: var(--muted); font-size: 13px; }
+  .kaynak { padding: 12px 20px 18px; font-size: 11px; color: var(--muted); }
+  .kaynak a { color: inherit; }
+  main { position: relative; flex: 1; min-width: 0; height: 100%; }
+  main canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .ustbar { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
+  .ustbar .btn { pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .ustbar .ayir { flex: 1; }
+  .ipucu {
+    position: absolute; bottom: 12px; left: 12px; right: 12px; text-align: center; pointer-events: none;
+    font-size: 12px; color: var(--muted);
+  }
+  #etiket {
+    position: absolute; transform: translate(-50%, -100%); pointer-events: none; white-space: nowrap;
+    background: var(--tag-bg); color: var(--tag-fg); font-size: 12px; padding: 4px 8px; border-radius: 6px;
+  }
+  #uyari {
+    position: absolute; top: 56px; left: 50%; transform: translateX(-50%); background: var(--toast-bg); color: var(--toast-fg);
+    padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20;
+  }
+  #uyari.goster { opacity: 1; }
+  #yukleniyor {
+    position: absolute; inset: 0; display: grid; place-items: center; background: var(--scene); color: var(--muted);
+    font-size: 14px; z-index: 30;
+  }
+  .cubuk { width: 180px; height: 4px; margin-top: 10px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .cubuk .dolu { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+
+  /* İnceleme: ürünü elde tutulan bir maket gibi her yöne çevirme ekranı */
+  #incele { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; background: var(--scene); }
+  .incele-ust { display: flex; align-items: center; gap: 12px; padding: 12px; }
+  .incele-ust div { flex: 1; min-width: 0; }
+  .incele-ust b { display: block; font-size: 15px; }
+  .incele-ust span { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #inceleSahne { position: relative; flex: 1; min-height: 0; cursor: grab; }
+  #inceleSahne:active { cursor: grabbing; }
+  .incele-alt { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; padding: 12px; }
+  .incele-ipucu { text-align: center; font-size: 12px; color: var(--muted); padding: 0 12px 12px; }
+
+  /* Fotoğraf: gerçekçi ışık hesabıyla çekilen görüntü */
+  #foto { position: absolute; inset: 0; z-index: 15; display: grid; place-items: center; background: var(--veil); padding: 16px; }
+  .foto-kutu { background: var(--panel); border-radius: 12px; padding: 14px; max-width: 100%; max-height: 100%; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  .foto-kutu img { display: block; max-width: 100%; max-height: calc(100vh - 220px); border-radius: 8px; }
+  .foto-kutu p { margin: 0; font-size: 13px; color: var(--muted); }
+  .foto-kutu .butonlar { margin: 0; justify-content: flex-end; }
+
+  @media (max-width: 760px) {
+    body { flex-direction: column-reverse; }
+    aside { width: 100%; height: auto; flex: 1; border-right: 0; border-top: 1px solid var(--line); }
+    main { height: 58vh; flex: none; }
+    header, section, .kaynak { padding-left: 16px; padding-right: 16px; }
+    .ipucu { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { #uyari, .cubuk .dolu { transition: none; } }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/",
+  "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/",
+  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.8/build/index.module.js",
+  "three-gpu-pathtracer": "https://cdn.jsdelivr.net/npm/three-gpu-pathtracer@0.0.23/build/index.module.js"
+} }
+</script>
+
+<aside>
+  <header>
+    <div class="firma" id="firmaAdi"></div>
+    <div class="alt">Oda Planlayıcı · Mobilyalarınızı odanızda görün</div>
+  </header>
+
+  <section>
+    <h2>Oda</h2>
+    <div class="olcu">
+      <label>Genişlik (m)<input type="number" id="odaW" min="2" max="12" step="0.1"></label>
+      <label>Uzunluk (m)<input type="number" id="odaL" min="2" max="12" step="0.1"></label>
+      <label>Tavan (m)<input type="number" id="odaH" min="2.2" max="4" step="0.1"></label>
+    </div>
+    <div class="satir">
+      <label>Zemin
+        <select id="zemin">
+          <option value="acik">Açık parke</option>
+          <option value="koyu">Koyu parke</option>
+          <option value="fayans">Fayans</option>
+        </select>
+      </label>
+    </div>
+    <div style="margin-top:10px">
+      <label>Duvar rengi</label>
+      <div class="renkler" id="duvarRenkleri"></div>
+    </div>
+  </section>
+
+  <section id="seciliBolum" hidden>
+    <h2>Seçili ürün</h2>
+    <div class="secili-ad" id="seciliAd"></div>
+    <div class="bos" id="seciliOlcu"></div>
+    <div class="renkler" id="seciliRenkler" style="margin-top:8px"></div>
+    <label class="aci">Açı <input type="range" id="aci" min="0" max="359" step="1"> <output id="aciDeger">0°</output></label>
+    <div class="butonlar">
+      <button class="btn ana" id="inceleAc">Elinde incele</button>
+      <button class="btn" id="don15" title="Q / E">↻ 15°</button>
+      <button class="btn" id="don90" title="R">↻ 90°</button>
+      <button class="btn sil" id="sil" title="Delete">Kaldır</button>
+    </div>
+    <div class="mesafe" id="mesafe"></div>
+  </section>
+
+  <section>
+    <h2>Ürünler</h2>
+    <div class="katalog" id="katalog"><div class="bos">Ürünler yükleniyor…</div></div>
+  </section>
+
+  <section>
+    <h2>Odadaki ürünler</h2>
+    <ul class="liste" id="liste"></ul>
+    <div class="toplam"><span>Toplam</span><span id="toplam">0 ₺</span></div>
+  </section>
+
+  <div class="kaynak">3D modeller: <a href="https://polyhaven.com/models" target="_blank" rel="noopener">Poly Haven</a> (CC0). Fiyatlar örnektir.</div>
+</aside>
+
+<main id="sahne">
+  <div class="ustbar">
+    <button class="btn aktif" id="gor3d">3D</button>
+    <button class="btn" id="gorUst">Üstten</button>
+    <button class="btn" id="temizle">Odayı boşalt</button>
+    <span class="ayir"></span>
+    <button class="btn ana" id="fotoCek">Fotoğraf çek</button>
+  </div>
+  <div id="etiket" hidden></div>
+  <div id="uyari"></div>
+  <div class="ipucu">Ürünü sürükle: taşı · Yeşil halkayı çevir: istediğin açıda döndür · Boş alanda sürükle: kamerayı çevir · Tekerlek: yakınlaştır</div>
+
+  <div id="incele" hidden>
+    <div class="incele-ust">
+      <div><b id="inceleAd"></b><span id="inceleOlcu"></span></div>
+      <button class="btn" id="inceleKapat">Odaya dön</button>
+    </div>
+    <div id="inceleSahne"></div>
+    <div class="incele-alt">
+      <button class="btn" data-bak="on">Önden</button>
+      <button class="btn" data-bak="arka">Arkadan</button>
+      <button class="btn" data-bak="yan">Yandan</button>
+      <button class="btn" data-bak="ust">Üstten</button>
+      <button class="btn" data-bak="alt">Alttan</button>
+      <button class="btn" data-bak="ters">Ters çevir</button>
+      <button class="btn" data-bak="sifir">Sıfırla</button>
+    </div>
+    <div class="incele-ipucu">Sürükle: her yöne çevir · Tekerlek ya da iki parmak: yakınlaştır</div>
+  </div>
+
+  <div id="foto" hidden>
+    <div class="foto-kutu">
+      <p id="fotoDurum">Hazırlanıyor…</p>
+      <div class="cubuk" id="fotoCubuk"><div class="dolu" id="fotoDolu"></div></div>
+      <img id="fotoResim" alt="Odanın gerçekçi fotoğrafı" hidden>
+      <p id="fotoNot" hidden>Kaydetmek için görsele sağ tıklayın ya da telefonda basılı tutun.</p>
+      <div class="butonlar">
+        <button class="btn" id="fotoBitir">Şimdi bitir</button>
+        <button class="btn" id="fotoKapat" hidden>Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="yukleniyor"><div>Mobilyalar yükleniyor… <span id="yuzde">0%</span><div class="cubuk"><div class="dolu" id="dolu"></div></div></div></div>
+</main>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ---------- Ayarlar (her firma için değiştirilecek kısım) ----------
+const FIRMA_ADI = 'Örnek Mobilya';
+const DUVAR_RENKLERI = ['#f2efe9', '#e6ded1', '#dde4e8', '#ead9cf', '#d5dccb', '#cfd3d8'];
+// Kumaş ürünlerde renk, modelin kendi dokusunun üzerine uygulanan bir ton olarak çalışır (beyaz = orijinal)
+const KUMAS_TONLARI = ['#ffffff', '#d9c7aa', '#b7c6d8', '#c3cfb3', '#dcb2a8', '#9a9a9a'];
+// Sol duvardaki pencere (metre)
+const PENCERE = { gen: 1.4, yuk: 1.4, alt: 0.9 };
+
+// ---------- Katalog (firmanın ürünleri) ----------
+// model: base64 gömülü .glb içeren .json dosyası (gerçek ölçülü, metre).
+// taban: modeli önü +z'ye bakacak şekilde çeviren açı. olcek: boyut düzeltmesi.
+// g/d/y (genişlik/derinlik/yükseklik) modelden otomatik ölçülür.
+const KATALOG = [
+  { ad: 'Klasik Kanepe', model: 'modeller/klasik-kanepe.json', fiyat: 27990, renkler: KUMAS_TONLARI },
+  { ad: 'Chester Kanepe', model: 'modeller/chester-kanepe.json', fiyat: 34990 },
+  { ad: 'Klasik Berjer', model: 'modeller/klasik-berjer.json', fiyat: 12990, renkler: KUMAS_TONLARI },
+  { ad: 'Modern Berjer', model: 'modeller/modern-berjer.json', fiyat: 14490 },
+  { ad: 'Puf', model: 'modeller/puf.json', fiyat: 4990 },
+  { ad: 'Orta Sehpa', model: 'modeller/orta-sehpa.json', fiyat: 6490, taban: Math.PI / 2 },
+  { ad: 'Yan Sehpa', model: 'modeller/yan-sehpa.json', fiyat: 2990 },
+  { ad: 'Yemek Masası', model: 'modeller/yemek-masasi.json', fiyat: 15990, olcek: 0.76 },
+  { ad: 'Sandalye', model: 'modeller/sandalye.json', fiyat: 3490 },
+  { ad: 'TV Ünitesi', model: 'modeller/tv-unitesi.json', fiyat: 18990 },
+  { ad: 'Kitaplık', model: 'modeller/kitaplik.json', fiyat: 7490, taban: Math.PI / 2 },
+  { ad: 'Saksı Bitkisi', model: 'modeller/saksi-bitki.json', fiyat: 1290 },
+  { ad: 'Halı', g: 2.0, d: 2.9, y: 0.012, fiyat: 3990, duz: true, renkler: ['#ffffff', '#c9d3db', '#d8c3ad', '#b9c4b0'], yap: haliYap },
+];
+
+// ---------- Sahne ----------
+const sahneEl = document.getElementById('sahne');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+sahneEl.prepend(renderer.domElement);
+const canvas = renderer.domElement;
+
+const scene = new THREE.Scene();
+// Sahne arka planı sayfanın açık/koyu temasını izler
+function sahneRengi() {
+  const c = getComputedStyle(document.documentElement).getPropertyValue('--scene').trim();
+  scene.background = new THREE.Color(c || '#e7eae8');
+}
+sahneRengi();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sahneRengi);
+new MutationObserver(sahneRengi).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 100);
+
+// Ortam ışığı: malzemelerin (deri, ahşap, kumaş) gerçekçi yansıması için iç mekan ışık haritası
+const pmrem = new THREE.PMREMGenerator(renderer);
+const odaOrtami = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+scene.environment = odaOrtami;
+scene.add(new THREE.HemisphereLight('#ffffff', '#b9a68c', 0.3));
+// Güneş: pencereden içeri giren gün ışığı (yönü odaKur'da pencereye göre ayarlanır)
+const gunes = new THREE.DirectionalLight('#ffe9cc', 5);
+// Ortam ışığı ne kadar güçlü olursa güneş lekesi o kadar silik kalır; bu yüzden odada kısık tutulur
+scene.environmentIntensity = 0.45;
+gunes.castShadow = true;
+gunes.shadow.mapSize.set(2048, 2048);
+gunes.shadow.bias = -0.0004;
+gunes.shadow.normalBias = 0.02;
+scene.add(gunes, gunes.target);
+
+// ---------- Oda ----------
+const oda = { W: 4.5, L: 5, H: 2.7, zemin: 'acik', duvar: DUVAR_RENKLERI[0] };
+const odaGrup = new THREE.Group();
+scene.add(odaGrup);
+const duvarMat = new THREE.MeshStandardMaterial({ color: oda.duvar, roughness: 0.95 });
+const beyazBoya = new THREE.MeshStandardMaterial({ color: '#f4f2ee', roughness: 0.5 });
+const camMat = new THREE.MeshStandardMaterial({ color: '#d6e6ef', roughness: 0.05, metalness: 0, transparent: true, opacity: 0.15 });
+const zeminMat = new THREE.MeshStandardMaterial({ roughness: 0.7 });
+let duvarlar = [];
+const dokuOnbellek = {};
+
+function canvasDoku(c) {
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return tex;
+}
+
+function zeminDokusu(tur) {
+  if (dokuOnbellek[tur]) return dokuOnbellek[tur];
+  const c = document.createElement('canvas');
+  c.width = c.height = 512;
+  const g = c.getContext('2d');
+  if (tur === 'fayans') {
+    g.fillStyle = '#bdb8b0';
+    g.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      g.fillStyle = `hsl(40, 6%, ${83 + Math.random() * 4}%)`;
+      g.fillRect(i * 256 + 2, j * 256 + 2, 252, 252);
+    }
+  } else {
+    const koyu = tur === 'koyu', satir = 8, h = 512 / satir;
+    for (let r = 0; r < satir; r++) {
+      let x = -Math.random() * 300;
+      while (x < 512) {
+        const uzun = 180 + Math.random() * 220;
+        const l = koyu ? 26 + Math.random() * 8 : 60 + Math.random() * 10;
+        g.fillStyle = `hsl(${koyu ? 24 : 33}, ${koyu ? 32 : 42}%, ${l}%)`;
+        g.fillRect(x, r * h, uzun, h);
+        g.fillStyle = 'rgba(0,0,0,0.2)';
+        g.fillRect(x, r * h, 2, h);
+        x += uzun;
+      }
+      g.fillStyle = 'rgba(0,0,0,0.22)';
+      g.fillRect(0, r * h, 512, 1.5);
+    }
+  }
+  const tex = canvasDoku(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return (dokuOnbellek[tur] = tex);
+}
+
+function kutuEkle(grup, mat, sx, sy, sz, x, y, z, golge = true) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
+  m.position.set(x, y, z);
+  m.castShadow = golge;
+  m.receiveShadow = true;
+  grup.add(m);
+  return m;
+}
+
+function odaKur() {
+  odaGrup.traverse(o => o.geometry && o.geometry.dispose());
+  odaGrup.clear();
+  duvarlar = [];
+  const { W, L, H } = oda;
+
+  const tex = zeminDokusu(oda.zemin);
+  tex.repeat.set(W / 1.2, L / 1.2); // doku 1.2 m x 1.2 m'lik alanı temsil ediyor
+  zeminMat.map = tex;
+  zeminMat.needsUpdate = true;
+  const zemin = new THREE.Mesh(new THREE.PlaneGeometry(W, L), zeminMat);
+  zemin.rotation.x = -Math.PI / 2;
+  zemin.receiveShadow = true;
+  odaGrup.add(zemin);
+
+  // Pencere ölçüleri odaya sığacak şekilde
+  const pw = Math.min(PENCERE.gen, L - 0.6), ph = Math.min(PENCERE.yuk, H - PENCERE.alt - 0.2), pz = -L * 0.12;
+
+  const t = 0.1, sh = 0.08, sk = 0.015;
+  const tanimlar = [
+    { w: W + 2 * t, d: t, x: 0, z: -L / 2 - t / 2, n: [0, 1], uzun: W },
+    { w: W + 2 * t, d: t, x: 0, z: L / 2 + t / 2, n: [0, -1], uzun: W },
+    { w: t, d: L, x: -W / 2 - t / 2, z: 0, n: [1, 0], uzun: L, pencere: true },
+    { w: t, d: L, x: W / 2 + t / 2, z: 0, n: [-1, 0], uzun: L },
+  ];
+  for (const k of tanimlar) {
+    const g = new THREE.Group();
+    g.userData = { n: k.n, ic: [k.x + k.n[0] * t / 2, k.z + k.n[1] * t / 2] };
+    if (k.pencere && pw > 0.4 && ph > 0.4) {
+      // Pencere boşluğu bırakarak duvarı dört parçadan kur
+      const z0 = pz - pw / 2, z1 = pz + pw / 2, ust = H - PENCERE.alt - ph;
+      kutuEkle(g, duvarMat, t, H, z0 + L / 2, k.x, H / 2, (z0 - L / 2) / 2);
+      kutuEkle(g, duvarMat, t, H, L / 2 - z1, k.x, H / 2, (z1 + L / 2) / 2);
+      kutuEkle(g, duvarMat, t, PENCERE.alt, pw, k.x, PENCERE.alt / 2, pz);
+      kutuEkle(g, duvarMat, t, ust, pw, k.x, H - ust / 2, pz);
+      // Pencere kasası, orta kayıt, denizlik ve cam
+      const kalin = 0.05, kd = t + 0.02;
+      kutuEkle(g, beyazBoya, kd, kalin, pw, k.x, PENCERE.alt + kalin / 2, pz);
+      kutuEkle(g, beyazBoya, kd, kalin, pw, k.x, PENCERE.alt + ph - kalin / 2, pz);
+      for (const zz of [z0 + kalin / 2, pz, z1 - kalin / 2]) kutuEkle(g, beyazBoya, kd, ph, kalin, k.x, PENCERE.alt + ph / 2, zz);
+      kutuEkle(g, beyazBoya, 0.16, 0.03, pw + 0.12, k.x + 0.06, PENCERE.alt - 0.015, pz);
+      kutuEkle(g, camMat, 0.01, ph, pw, k.x, PENCERE.alt + ph / 2, pz, false);
+    } else {
+      kutuEkle(g, duvarMat, k.w, H, k.d, k.x, H / 2, k.z);
+    }
+    // Süpürgelik
+    kutuEkle(g, beyazBoya, k.n[0] ? sk : k.uzun, sh, k.n[0] ? k.uzun : sk,
+      k.x + k.n[0] * (t / 2 + sk / 2), sh / 2, k.z + k.n[1] * (t / 2 + sk / 2), false);
+    odaGrup.add(g);
+    duvarlar.push(g);
+  }
+
+  // Güneşi pencereden içeri, zemine çapraz düşecek şekilde konumla. Tavan olmadığı için güneş yeterince
+  // alçak tutulur: duvarın üstünden aşan ışık odanın dışına düşer, içeri yalnızca pencereden girer.
+  const egim = Math.min(0.6, (0.9 * H) / W);
+  const yon = new THREE.Vector3(1, -egim, 0.25).normalize();
+  const pencereOrta = new THREE.Vector3(-W / 2, PENCERE.alt + ph / 2, pz);
+  const hedef = pencereOrta.clone().addScaledVector(yon, pencereOrta.y / -yon.y);
+  gunes.position.copy(hedef).addScaledVector(yon, -14);
+  gunes.target.position.copy(hedef);
+  const r = Math.max(W, L) + 1;
+  Object.assign(gunes.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 1, far: 30 });
+  gunes.shadow.camera.updateProjectionMatrix();
+}
+
+// ---------- Halı (kodla çizilen tek ürün) ----------
+let haliDoku;
+function haliYap(mat) {
+  if (!haliDoku) {
+    const c = document.createElement('canvas');
+    c.width = 512; c.height = 742;
+    const g = c.getContext('2d');
+    g.fillStyle = '#ebe6de';
+    g.fillRect(0, 0, c.width, c.height);
+    g.strokeStyle = '#9c8f7d';
+    g.lineWidth = 16; g.strokeRect(28, 28, c.width - 56, c.height - 56);
+    g.lineWidth = 4; g.strokeRect(58, 58, c.width - 116, c.height - 116);
+    g.save();
+    g.beginPath(); g.rect(70, 70, c.width - 140, c.height - 140); g.clip();
+    g.strokeStyle = 'rgba(120,105,88,0.45)'; g.lineWidth = 3;
+    for (let i = -c.height; i < c.width + c.height; i += 56) {
+      g.beginPath(); g.moveTo(i, 0); g.lineTo(i + c.height, c.height); g.stroke();
+      g.beginPath(); g.moveTo(i, c.height); g.lineTo(i + c.height, 0); g.stroke();
+    }
+    g.restore();
+    // Dokuma hissi için ince gren
+    const veri = g.getImageData(0, 0, c.width, c.height);
+    for (let i = 0; i < veri.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * 18;
+      veri.data[i] += n; veri.data[i + 1] += n; veri.data[i + 2] += n;
+    }
+    g.putImageData(veri, 0, 0);
+    haliDoku = canvasDoku(c);
+  }
+  mat.map = haliDoku;
+  const grup = new THREE.Group();
+  const m = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.012, 2.9), mat);
+  m.position.y = 0.006;
+  m.receiveShadow = true;
+  grup.add(m);
+  return grup;
+}
+
+// ---------- Model yükleme ----------
+// Modeller .glb içeriği base64 olarak gömülü .json dosyaları halinde gelir (yayın ortamı .glb sunmuyor)
+const yukleyici = new GLTFLoader();
+let yuklenen = 0;
+function ilerleme(toplam) {
+  const y = Math.round((++yuklenen / toplam) * 100);
+  $('yuzde').textContent = y + '%';
+  $('dolu').style.width = y + '%';
+}
+
+async function modelVerisi(yol) {
+  const yanit = await fetch(yol);
+  if (!yanit.ok) throw new Error(`${yol} yüklenemedi (${yanit.status})`);
+  const ikili = atob((await yanit.json()).glb);
+  const dizi = new Uint8Array(ikili.length);
+  for (let i = 0; i < ikili.length; i++) dizi[i] = ikili.charCodeAt(i);
+  return dizi.buffer;
+}
+
+// Modeli yükler, önünü +z'ye çevirir, tabanını zemine oturtur ve gerçek ölçüsünü katalog kaydına yazar
+async function modelHazirla(def) {
+  const gltf = await yukleyici.parseAsync(await modelVerisi(def.model), '');
+  const ic = gltf.scene;
+  ic.rotation.y = def.taban || 0;
+  if (def.olcek) ic.scale.setScalar(def.olcek);
+  const sablon = new THREE.Group();
+  sablon.add(ic);
+  sablon.updateMatrixWorld(true);
+  const b = new THREE.Box3().setFromObject(ic);
+  ic.position.set(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
+  ic.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  const s = b.getSize(new THREE.Vector3());
+  Object.assign(def, { g: s.x, d: s.z, y: s.y, sablon });
+}
+
+// Katalog kartları için her ürünün küçük bir resmini çizer
+function onizlemeleriCiz(defs) {
+  const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  r.setSize(240, 180);
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  const sc = new THREE.Scene();
+  const pm = new THREE.PMREMGenerator(r);
+  sc.environment = pm.fromScene(new RoomEnvironment(r), 0.04).texture;
+  const isik = new THREE.DirectionalLight('#ffffff', 1.2);
+  isik.position.set(2, 4, 3);
+  sc.add(isik);
+  const kam = new THREE.PerspectiveCamera(30, 4 / 3, 0.01, 50);
+  const yon = new THREE.Vector3(0.8, 0.75, 1.5).normalize();
+  for (const def of defs) {
+    const o = def.sablon ? def.sablon.clone(true) : def.yap(new THREE.MeshStandardMaterial({ color: def.renkler[0], roughness: 0.95 }));
+    sc.add(o);
+    const kure = new THREE.Box3().setFromObject(o).getBoundingSphere(new THREE.Sphere());
+    kam.position.copy(kure.center).addScaledVector(yon, (kure.radius / Math.sin(THREE.MathUtils.degToRad(15))) * 0.95);
+    kam.lookAt(kure.center);
+    r.render(sc, kam);
+    def.onizleme = r.domElement.toDataURL('image/png');
+    sc.remove(o);
+  }
+  pm.dispose();
+  r.dispose();
+  r.forceContextLoss();
+}
+
+// ---------- Eşyalar ----------
+const esyalar = [];
+let secili = null;
+
+function esyaOlustur(def) {
+  let grup;
+  const mallar = [];
+  if (def.sablon) {
+    grup = def.sablon.clone(true);
+    // Renk değiştirilebilen ürünlerde her kopyaya kendi malzemesini ver
+    if (def.renkler) grup.traverse(o => {
+      if (o.isMesh) { o.material = o.material.clone(); mallar.push(o.material); }
+    });
+  } else {
+    const mat = new THREE.MeshStandardMaterial({ color: def.renkler[0], roughness: 0.95 });
+    grup = def.yap(mat);
+    mallar.push(mat);
+  }
+  const it = { def, grup, mallar, renk: def.renkler?.[0], w: def.g, d: def.d, rot: 0 };
+  grup.userData.esya = it;
+  scene.add(grup);
+  esyalar.push(it);
+  return it;
+}
+
+function esyaSil(it) {
+  scene.remove(it.grup);
+  esyalar.splice(esyalar.indexOf(it), 1);
+  if (secili === it) sec(null);
+  listeGuncelle();
+}
+
+// Döndürülmüş ürünün eksenlere göre yarı genişlik / yarı derinliği
+function yariBoy(it, r) {
+  const c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
+  return [(it.w * c + it.d * s) / 2, (it.w * s + it.d * c) / 2];
+}
+
+function koseler(it, x, z, r) {
+  const c = Math.cos(r), s = Math.sin(r), hw = it.w / 2, hd = it.d / 2;
+  return [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].map(([a, b]) => [x + a * c + b * s, z - a * s + b * c]);
+}
+
+// İki döndürülmüş dikdörtgen çakışıyor mu (ayırma ekseni testi). Kenar kenara değmek serbest.
+function cakisiyor(A, B) {
+  for (const P of [A, B]) for (let i = 0; i < 4; i++) {
+    const p = P[i], q = P[(i + 1) % 4];
+    const ax = p[1] - q[1], az = q[0] - p[0];
+    let a1 = Infinity, a2 = -Infinity, b1 = Infinity, b2 = -Infinity;
+    for (const v of A) { const k = v[0] * ax + v[1] * az; a1 = Math.min(a1, k); a2 = Math.max(a2, k); }
+    for (const v of B) { const k = v[0] * ax + v[1] * az; b1 = Math.min(b1, k); b2 = Math.max(b2, k); }
+    const tol = 1e-4 * Math.hypot(ax, az);
+    if (a2 <= b1 + tol || b2 <= a1 + tol) return false;
+  }
+  return true;
+}
+
+function sinirla(it, x, z, r) {
+  const [hx, hz] = yariBoy(it, r);
+  const mx = Math.max(0, oda.W / 2 - hx), mz = Math.max(0, oda.L / 2 - hz);
+  return [Math.min(mx, Math.max(-mx, x)), Math.min(mz, Math.max(-mz, z))];
+}
+
+function uygunMu(it, x, z, r) {
+  const [hx, hz] = yariBoy(it, r);
+  if (Math.abs(x) > oda.W / 2 - hx + 1e-6 || Math.abs(z) > oda.L / 2 - hz + 1e-6) return false;
+  if (it.def.duz) return true;
+  const K = koseler(it, x, z, r);
+  return esyalar.every(o => o === it || o.def.duz || !cakisiyor(K, koseler(o, o.grup.position.x, o.grup.position.z, o.rot)));
+}
+
+function konum(it, x, z) {
+  it.grup.position.set(x, 0, z);
+  if (it === secili) seciliGuncelle();
+}
+
+// Başlangıçtan hedefe doğru, engele çarpmadan gidilebilecek en uzak nokta
+function yolBoyuncaEnUzak(it, x0, z0, x1, z1) {
+  let lo = 0, hi = 1;
+  if (uygunMu(it, x1, z1, it.rot)) return [x1, z1];
+  for (let i = 0; i < 14; i++) {
+    const m = (lo + hi) / 2;
+    if (uygunMu(it, x0 + (x1 - x0) * m, z0 + (z1 - z0) * m, it.rot)) lo = m; else hi = m;
+  }
+  return [x0 + (x1 - x0) * lo, z0 + (z1 - z0) * lo];
+}
+
+function tasi(it, hx, hz) {
+  const [x, z] = sinirla(it, hx, hz, it.rot);
+  const px = it.grup.position.x, pz = it.grup.position.z;
+  // Şu an zaten çakışık durumdaysa (ör. oda küçültüldüyse) serbestçe taşınabilsin
+  if (uygunMu(it, x, z, it.rot) || !uygunMu(it, px, pz, it.rot)) return konum(it, x, z);
+  // Engele çarpınca yanından kayarak ilerle: önce x sonra z, ya da tersi; hedefe en yakın olanı al
+  const a = yolBoyuncaEnUzak(it, px, pz, x, pz);
+  const a2 = yolBoyuncaEnUzak(it, a[0], a[1], a[0], z);
+  const b = yolBoyuncaEnUzak(it, px, pz, px, z);
+  const b2 = yolBoyuncaEnUzak(it, b[0], b[1], x, b[1]);
+  const uz = p => Math.hypot(p[0] - x, p[1] - z);
+  const en = uz(a2) <= uz(b2) ? a2 : b2;
+  konum(it, en[0], en[1]);
+}
+
+const TAM_TUR = 2 * Math.PI;
+const normalAci = r => ((r % TAM_TUR) + TAM_TUR) % TAM_TUR;
+
+function dondurAyarla(it, r) {
+  it.rot = normalAci(r);
+  it.grup.rotation.y = it.rot;
+}
+
+// Ürünü verilen açıya çevirir; duvara ya da başka ürüne çarpacaksa çevirmez ve false döner
+function aciyaCevir(it, r) {
+  r = normalAci(r);
+  const [x, z] = sinirla(it, it.grup.position.x, it.grup.position.z, r);
+  if (!uygunMu(it, x, z, r)) return false;
+  dondurAyarla(it, r);
+  konum(it, x, z);
+  return true;
+}
+
+function dondur(it, aci) {
+  if (!aciyaCevir(it, it.rot + aci)) uyar('Bu yönde döndürmek için yeterli yer yok');
+}
+
+function bosYerBul(it) {
+  const adaylar = [];
+  for (let x = -oda.W / 2; x <= oda.W / 2 + 1e-9; x += 0.1)
+    for (let z = -oda.L / 2; z <= oda.L / 2 + 1e-9; z += 0.1) adaylar.push([x, z]);
+  adaylar.sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]));
+  for (const r of [0, Math.PI / 2]) for (const [x0, z0] of adaylar) {
+    const [x, z] = sinirla(it, x0, z0, r);
+    if (uygunMu(it, x, z, r)) return [x, z, r];
+  }
+  return null;
+}
+
+function urunEkle(def) {
+  const it = esyaOlustur(def);
+  const yer = bosYerBul(it);
+  if (!yer) {
+    scene.remove(it.grup);
+    esyalar.pop();
+    return uyar(`${def.ad} için odada yeterli boş alan yok`);
+  }
+  dondurAyarla(it, yer[2]);
+  konum(it, yer[0], yer[1]);
+  sec(it);
+  listeGuncelle();
+}
+
+// ---------- Seçim görünümü: zemin çerçevesi ve döndürme halkası ----------
+const YESIL = '#16a37f', KIRMIZI = '#d64545';
+const cerceve = new THREE.LineLoop(
+  new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(new Array(12).fill(0), 3)),
+  new THREE.LineBasicMaterial({ color: YESIL, depthTest: false })
+);
+cerceve.renderOrder = 10;
+const halkaMat = new THREE.MeshBasicMaterial({ color: YESIL, transparent: true, opacity: 0.9, depthTest: false, side: THREE.DoubleSide });
+const halka = new THREE.Mesh(new THREE.RingGeometry(0.97, 1, 96), halkaMat);
+halka.rotation.x = -Math.PI / 2;
+halka.renderOrder = 11;
+// Tutması kolay olsun diye görünmeyen, daha kalın bir yakalama halkası (sadece ışın testinde kullanılır)
+const halkaTut = new THREE.Mesh(new THREE.RingGeometry(0.8, 1.2, 48), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+halkaTut.rotation.x = -Math.PI / 2;
+halkaTut.layers.set(2);
+const tutamak = new THREE.Mesh(new THREE.SphereGeometry(0.06, 20, 14), halkaMat);
+tutamak.renderOrder = 12;
+const secimGrubu = new THREE.Group();
+secimGrubu.add(cerceve, halka, halkaTut, tutamak);
+secimGrubu.visible = false;
+scene.add(secimGrubu);
+
+function $(id) { return document.getElementById(id); }
+const etiket = $('etiket');
+const cm = m => Math.round(m * 100);
+const fiyatYaz = n => n.toLocaleString('tr-TR') + ' ₺';
+
+function sec(it) {
+  secili = it;
+  secimGrubu.visible = !!it;
+  etiket.hidden = !it;
+  $('seciliBolum').hidden = !it;
+  if (it) {
+    const R = Math.hypot(it.w, it.d) / 2 + 0.14;
+    halka.geometry.dispose();
+    halka.geometry = new THREE.RingGeometry(R - 0.022, R + 0.022, 96);
+    halkaTut.geometry.dispose();
+    halkaTut.geometry = new THREE.RingGeometry(R - 0.16, R + 0.16, 48);
+    it.halkaR = R;
+    $('seciliAd').textContent = it.def.ad + ' · ' + fiyatYaz(it.def.fiyat);
+    $('seciliOlcu').textContent = `${cm(it.def.g)} × ${cm(it.def.d)} × ${cm(it.def.y)} cm (G × D × Y)`;
+    const kap = $('seciliRenkler');
+    kap.hidden = !it.def.renkler;
+    if (it.def.renkler) renkleriCiz(kap, it.def.renkler, it.renk, c => { it.renk = c; it.mallar.forEach(m => m.color.set(c)); });
+    seciliGuncelle();
+  }
+  listeGuncelle();
+}
+
+function seciliGuncelle() {
+  const it = secili;
+  const { x, z } = it.grup.position;
+  const pos = cerceve.geometry.attributes.position;
+  koseler(it, x, z, it.rot).forEach(([cx, cz], i) => pos.setXYZ(i, cx, 0.02, cz));
+  pos.needsUpdate = true;
+  halka.position.set(x, 0.03, z);
+  halkaTut.position.set(x, 0.03, z);
+  // Tutamak ürünün ön yüzünü gösterir
+  tutamak.position.set(x + it.halkaR * Math.sin(it.rot), 0.06, z + it.halkaR * Math.cos(it.rot));
+  const derece = Math.round(THREE.MathUtils.radToDeg(it.rot)) % 360;
+  $('aci').value = derece;
+  $('aciDeger').textContent = derece + '°';
+  const [hx, hz] = yariBoy(it, it.rot);
+  const m = (a, b) => `<span>${a}</span><b>${cm(b)} cm</b>`;
+  $('mesafe').innerHTML = '<span style="grid-column:1/-1">Duvarlara uzaklık</span>' +
+    m('Sol duvar', x - hx + oda.W / 2) + m('Sağ duvar', oda.W / 2 - x - hx) +
+    m('Arka duvar', z - hz + oda.L / 2) + m('Ön duvar', oda.L / 2 - z - hz);
+  etiket.textContent = `${it.def.ad} · ${cm(it.def.g)}×${cm(it.def.d)} cm`;
+}
+
+function renkleriCiz(kap, renkler, aktif, sec) {
+  kap.innerHTML = '';
+  for (const c of renkler) {
+    const b = document.createElement('button');
+    b.className = 'renk' + (c === aktif ? ' secili' : '');
+    b.style.background = c;
+    b.title = c === '#ffffff' && kap.id === 'seciliRenkler' ? 'Orijinal renk' : c;
+    b.onclick = () => { kap.querySelectorAll('.renk').forEach(e => e.classList.remove('secili')); b.classList.add('secili'); sec(c); };
+    kap.appendChild(b);
+  }
+}
+
+function listeGuncelle() {
+  const ul = $('liste');
+  ul.innerHTML = '';
+  if (!esyalar.length) ul.innerHTML = '<li class="bos">Henüz ürün eklenmedi</li>';
+  for (const it of esyalar) {
+    const li = document.createElement('li');
+    if (it === secili) li.className = 'secili';
+    li.innerHTML = `<span>${it.def.ad}</span><span class="fiyat">${fiyatYaz(it.def.fiyat)}</span>`;
+    li.onclick = () => sec(it);
+    ul.appendChild(li);
+  }
+  $('toplam').textContent = fiyatYaz(esyalar.reduce((t, it) => t + it.def.fiyat, 0));
+}
+
+let uyariZaman;
+function uyar(metin) {
+  const u = $('uyari');
+  u.textContent = metin;
+  u.classList.add('goster');
+  clearTimeout(uyariZaman);
+  uyariZaman = setTimeout(() => u.classList.remove('goster'), 2600);
+}
+
+// ---------- Fare / dokunmatik ----------
+// Bu dinleyiciler OrbitControls'tan önce eklenmeli ki ürün tutulduğunda kamera dönmesin.
+const isin = new THREE.Raycaster(), ndc = new THREE.Vector2();
+isin.layers.enable(2);
+const zeminDuzlem = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+function isinAyarla(e) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  isin.setFromCamera(ndc, camera);
+}
+function esyaBul() {
+  for (const h of isin.intersectObjects(esyalar.map(e => e.grup), true)) {
+    let o = h.object;
+    while (o && !o.userData.esya) o = o.parent;
+    if (o) return o.userData.esya;
+  }
+  return null;
+}
+const halkaTutuldu = () => secili && isin.intersectObjects([tutamak, halkaTut], false).length > 0;
+const zeminNoktasi = () => isin.ray.intersectPlane(zeminDuzlem, new THREE.Vector3());
+// Ürünün merkezinden bakınca noktanın açısı (rotation.y ile aynı yönde artar)
+const merkezAcisi = (it, p) => Math.atan2(p.x - it.grup.position.x, p.z - it.grup.position.z);
+
+let surukle = null, basla = null;
+canvas.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  basla = { x: e.clientX, y: e.clientY };
+  isinAyarla(e);
+  const p = zeminNoktasi();
+  if (!p) return;
+  if (halkaTutuldu()) {
+    surukle = { tur: 'dondur', it: secili, basAci: merkezAcisi(secili, p), basRot: secili.rot, id: e.pointerId };
+  } else {
+    const it = esyaBul();
+    if (!it) return;
+    if (it !== secili) sec(it);
+    surukle = { tur: 'tasi', it, dx: it.grup.position.x - p.x, dz: it.grup.position.z - p.z, id: e.pointerId };
+  }
+  controls.enabled = false;
+  canvas.setPointerCapture(e.pointerId);
+  canvas.style.cursor = 'grabbing';
+});
+canvas.addEventListener('pointermove', e => {
+  isinAyarla(e);
+  if (surukle && e.pointerId === surukle.id) {
+    const p = zeminNoktasi();
+    if (!p) return;
+    if (surukle.tur === 'tasi') return tasi(surukle.it, p.x + surukle.dx, p.z + surukle.dz);
+    // Serbest döndürme: Shift basılıysa 15°'lik adımlarla, değilse 45°'nin katlarına yaklaşınca hafifçe yapışır
+    let r = surukle.basRot + (merkezAcisi(surukle.it, p) - surukle.basAci);
+    const adim = THREE.MathUtils.degToRad(e.shiftKey ? 15 : 45);
+    const yakin = Math.round(r / adim) * adim;
+    if (e.shiftKey || Math.abs(r - yakin) < THREE.MathUtils.degToRad(4)) r = yakin;
+    halkaMat.color.set(aciyaCevir(surukle.it, r) ? YESIL : KIRMIZI);
+    return;
+  }
+  if (e.pointerType === 'mouse' && !e.buttons) canvas.style.cursor = halkaTutuldu() ? 'alias' : esyaBul() ? 'grab' : '';
+});
+function birak(e) {
+  if (surukle) {
+    surukle = null;
+    controls.enabled = true;
+    halkaMat.color.set(YESIL);
+    canvas.style.cursor = '';
+  } else if (basla && e.type === 'pointerup' && Math.hypot(e.clientX - basla.x, e.clientY - basla.y) < 5) {
+    sec(null);
+  }
+  basla = null;
+}
+canvas.addEventListener('pointerup', birak);
+canvas.addEventListener('pointercancel', birak);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI / 2 - 0.05;
+controls.minDistance = 1;
+controls.maxDistance = 45;
+
+let ustten = false;
+function kameraAyarla() {
+  const m = Math.max(oda.W, oda.L);
+  // Üstten bakışta dar açılı ve uzak kamera: plan çizimine yakın, duvarlar eğik görünmez
+  camera.fov = ustten ? 22 : 50;
+  camera.updateProjectionMatrix();
+  if (ustten) {
+    controls.enableRotate = false;
+    controls.target.set(0, 0, 0);
+    camera.position.set(0, m * 3.3, 0.001);
+  } else {
+    controls.enableRotate = true;
+    controls.target.set(0, 0.4, 0);
+    camera.position.set(oda.W * 0.5 + m * 0.3, m * 0.9, oda.L * 0.5 + m * 0.65);
+  }
+  controls.update();
+}
+
+// ---------- Köşe gölgeleri (ambient occlusion) ----------
+// Eşyaların yere değdiği yerleri ve oda köşelerini koyulaştırır. Telefonlarda performans için kapalı.
+let composer = null;
+async function aoKur() {
+  if (matchMedia('(pointer: coarse)').matches) return;
+  try {
+    const { GTAOPass } = await import('three/addons/postprocessing/GTAOPass.js');
+    const hedef = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
+    const c = new EffectComposer(renderer, hedef);
+    c.addPass(new RenderPass(scene, camera));
+    const ao = new GTAOPass(scene, camera, 1, 1);
+    ao.updateGtaoMaterial({ radius: 0.3, distanceExponent: 1, thickness: 1, scale: 1.2 });
+    ao.blendIntensity = 0.9;
+    c.addPass(ao);
+    c.addPass(new OutputPass());
+    c.setSize(sahneEl.clientWidth, sahneEl.clientHeight);
+    composer = c;
+  } catch (e) {
+    console.warn('Köşe gölgeleri açılamadı:', e);
+  }
+}
+
+// ---------- Elinde incele: ürünü maket gibi her yöne çevirme ----------
+const inc = { r: null, sc: null, kam: null, pivot: null, yaricap: 1, uzak: 3, parmaklar: new Map(), hedefQ: null };
+const ILK_DURUS = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.35, -0.55, 0, 'XYZ'));
+
+function inceleKur() {
+  if (inc.r) return;
+  const r = new THREE.WebGLRenderer({ antialias: true });
+  r.setPixelRatio(Math.min(devicePixelRatio, 2));
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  r.toneMappingExposure = 0.95;
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  const kap = $('inceleSahne');
+  kap.appendChild(r.domElement);
+  const sc = new THREE.Scene();
+  const pm = new THREE.PMREMGenerator(r);
+  sc.environment = pm.fromScene(new RoomEnvironment(r), 0.04).texture;
+  const isik = new THREE.DirectionalLight('#ffffff', 1.0);
+  isik.position.set(2, 4, 3);
+  sc.add(isik);
+  const kam = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
+  const pivot = new THREE.Group();
+  sc.add(pivot);
+  Object.assign(inc, { r, sc, kam, pivot });
+
+  new ResizeObserver(() => {
+    const w = kap.clientWidth, h = kap.clientHeight;
+    if (!w || !h) return;
+    r.setSize(w, h, false);
+    kam.aspect = w / h;
+    kam.updateProjectionMatrix();
+  }).observe(kap);
+
+  const el = r.domElement;
+  const qx = new THREE.Quaternion(), qy = new THREE.Quaternion();
+  const X = new THREE.Vector3(1, 0, 0), Y = new THREE.Vector3(0, 1, 0);
+  el.addEventListener('pointerdown', e => {
+    el.setPointerCapture(e.pointerId);
+    inc.parmaklar.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    inc.hedefQ = null;
+  });
+  el.addEventListener('pointermove', e => {
+    const onceki = inc.parmaklar.get(e.pointerId);
+    if (!onceki) return;
+    if (inc.parmaklar.size === 1) {
+      // Kamera sabit; ürünü ekranın yatay ve dikey eksenleri etrafında çevir
+      const dx = e.clientX - onceki.x, dy = e.clientY - onceki.y;
+      qy.setFromAxisAngle(Y, dx * 0.01);
+      qx.setFromAxisAngle(X, dy * 0.01);
+      inc.pivot.quaternion.premultiply(qy).premultiply(qx);
+    } else if (inc.parmaklar.size === 2) {
+      const [a, b] = [...inc.parmaklar.values()];
+      const once = Math.hypot(a.x - b.x, a.y - b.y);
+      inc.parmaklar.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const [c, d] = [...inc.parmaklar.values()];
+      const simdi = Math.hypot(c.x - d.x, c.y - d.y);
+      if (once > 0) yakinlas(once / simdi);
+      return;
+    }
+    inc.parmaklar.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  });
+  const birak = e => inc.parmaklar.delete(e.pointerId);
+  el.addEventListener('pointerup', birak);
+  el.addEventListener('pointercancel', birak);
+  el.addEventListener('wheel', e => { e.preventDefault(); yakinlas(1 + e.deltaY * 0.001); }, { passive: false });
+}
+
+function yakinlas(oran) {
+  inc.uzak = THREE.MathUtils.clamp(inc.uzak * oran, inc.yaricap * 1.15, inc.yaricap * 8);
+}
+
+function inceleAc(it) {
+  inceleKur();
+  inc.pivot.clear();
+  // userData ürüne geri referans tutuyor; kopyalanırken JSON'a çevrildiği için geçici olarak çıkar
+  const veri = it.grup.userData;
+  it.grup.userData = {};
+  const o = it.grup.clone(true);
+  it.grup.userData = veri;
+  o.position.set(0, 0, 0);
+  o.rotation.set(0, 0, 0);
+  o.updateMatrixWorld(true);
+  const kutu = new THREE.Box3().setFromObject(o);
+  o.position.sub(kutu.getCenter(new THREE.Vector3()));
+  inc.pivot.add(o);
+  inc.pivot.quaternion.copy(ILK_DURUS);
+  inc.hedefQ = null;
+  inc.yaricap = kutu.getBoundingSphere(new THREE.Sphere()).radius;
+  inc.uzak = (inc.yaricap / Math.sin(THREE.MathUtils.degToRad(17.5))) * 1.1;
+  inc.sc.background = scene.background.clone();
+  $('inceleAd').textContent = it.def.ad + ' · ' + fiyatYaz(it.def.fiyat);
+  $('inceleOlcu').textContent = `${cm(it.def.g)} × ${cm(it.def.d)} × ${cm(it.def.y)} cm (G × D × Y)`;
+  $('incele').hidden = false;
+  renderer.setAnimationLoop(null);
+  inc.r.setAnimationLoop(() => {
+    if (inc.hedefQ) {
+      inc.pivot.quaternion.slerp(inc.hedefQ, 0.15);
+      if (inc.pivot.quaternion.angleTo(inc.hedefQ) < 0.002) { inc.pivot.quaternion.copy(inc.hedefQ); inc.hedefQ = null; }
+    }
+    inc.kam.position.set(0, 0, inc.uzak);
+    inc.kam.lookAt(0, 0, 0);
+    inc.r.render(inc.sc, inc.kam);
+  });
+}
+
+function inceleKapat() {
+  $('incele').hidden = true;
+  inc.r?.setAnimationLoop(null);
+  renderer.setAnimationLoop(ciz);
+}
+
+// Hazır bakış açıları: ürün döner, kamera yerinde kalır
+const e = (x, y, z) => new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
+const BAKISLAR = {
+  on: e(0, 0, 0),
+  arka: e(0, Math.PI, 0),
+  yan: e(0, -Math.PI / 2, 0),
+  ust: e(Math.PI / 2, 0, 0),
+  alt: e(-Math.PI / 2, 0, 0),
+  ters: e(Math.PI, 0, 0),
+  sifir: ILK_DURUS,
+};
+document.querySelectorAll('[data-bak]').forEach(b => {
+  b.onclick = () => { inc.hedefQ = BAKISLAR[b.dataset.bak].clone(); };
+});
+$('inceleAc').onclick = () => secili && inceleAc(secili);
+$('inceleKapat').onclick = inceleKapat;
+
+// ---------- Fotoğraf çek: ışığı gerçekten hesaplayan (path tracing) yüksek kaliteli görüntü ----------
+const FOTO_ORNEK = 120;
+let fotoBitir = false;
+
+// Path tracer için basit bir gökyüzü: üstte parlak beyaz, altta sıcak toprak tonu
+function gokDokusu() {
+  const w = 128, h = 64, veri = new Float32Array(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    const t = y / (h - 1);
+    const ust = t > 0.5 ? (t - 0.5) * 2 : 0, alt = t < 0.5 ? (0.5 - t) * 2 : 0;
+    const r = 1.0 + ust * 0.6 - alt * 0.6, g = 1.0 + ust * 0.65 - alt * 0.65, b = 1.05 + ust * 0.8 - alt * 0.75;
+    for (let x = 0; x < w; x++) veri.set([r, g, b, 1], (y * w + x) * 4);
+  }
+  const tex = new THREE.DataTexture(veri, w, h, THREE.RGBAFormat, THREE.FloatType);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+async function fotografCek() {
+  sec(null);
+  fotoBitir = false;
+  $('foto').hidden = false;
+  $('fotoResim').hidden = $('fotoNot').hidden = $('fotoKapat').hidden = true;
+  $('fotoBitir').hidden = $('fotoCubuk').hidden = false;
+  $('fotoDolu').style.width = '0%';
+  $('fotoDurum').textContent = 'Işık hesabı hazırlanıyor…';
+  renderer.setAnimationLoop(null);
+
+  let url, not = '', pt;
+  const eskiOrtam = scene.environment;
+  try {
+    const { WebGLPathTracer } = await import('three-gpu-pathtracer');
+    scene.environment = gokDokusu();
+    pt = new WebGLPathTracer(renderer);
+    pt.tiles.set(2, 2);
+    pt.filterGlossyFactor = 0.5;
+    pt.setScene(scene, camera);
+    url = await new Promise(coz => {
+      const adim = () => {
+        pt.renderSample();
+        const n = Math.floor(pt.samples);
+        $('fotoDurum').textContent = `Işık hesaplanıyor… ${n} / ${FOTO_ORNEK}`;
+        $('fotoDolu').style.width = Math.min(100, (n / FOTO_ORNEK) * 100) + '%';
+        // Görüntü aynı karede alınmalı, yoksa tuval temizlenir
+        if (n >= FOTO_ORNEK || fotoBitir) return coz(canvas.toDataURL('image/jpeg', 0.92));
+        requestAnimationFrame(adim);
+      };
+      adim();
+    });
+  } catch (hata) {
+    console.warn('Gerçekçi fotoğraf motoru açılamadı:', hata);
+  } finally {
+    // Motorun kapanırken verdiği hatalar fotoğrafı etkilemesin
+    try { pt?.dispose(); } catch (hata) { console.warn('Fotoğraf motoru kapatılırken:', hata); }
+    if (scene.environment !== eskiOrtam) {
+      scene.environment.dispose();
+      scene.environment = eskiOrtam;
+    }
+  }
+  if (!url) {
+    // Yedek: normal görüntüyü al
+    if (composer) composer.render(); else renderer.render(scene, camera);
+    url = canvas.toDataURL('image/jpeg', 0.92);
+    not = 'Gerçekçi ışık hesabı bu cihazda açılamadı, normal görüntü alındı. ';
+  }
+
+  $('fotoResim').src = url;
+  $('fotoResim').hidden = $('fotoNot').hidden = $('fotoKapat').hidden = false;
+  $('fotoBitir').hidden = $('fotoCubuk').hidden = true;
+  $('fotoDurum').textContent = not + 'Fotoğrafınız hazır.';
+  renderer.setAnimationLoop(ciz);
+}
+$('fotoCek').onclick = fotografCek;
+$('fotoBitir').onclick = () => { fotoBitir = true; };
+$('fotoKapat').onclick = () => { $('foto').hidden = true; };
+
+// ---------- Arayüz bağlantıları ----------
+$('firmaAdi').textContent = FIRMA_ADI;
+
+for (const [id, k] of [['odaW', 'W'], ['odaL', 'L'], ['odaH', 'H']]) {
+  const inp = $(id);
+  inp.value = oda[k];
+  inp.addEventListener('change', () => {
+    const v = parseFloat(inp.value.replace(',', '.'));
+    const min = +inp.min, max = +inp.max;
+    if (!isFinite(v)) { inp.value = oda[k]; return; }
+    oda[k] = Math.min(max, Math.max(min, v));
+    inp.value = oda[k];
+    odaKur();
+    for (const it of esyalar) konum(it, ...sinirla(it, it.grup.position.x, it.grup.position.z, it.rot));
+    if (secili) seciliGuncelle();
+    kameraAyarla();
+  });
+}
+$('zemin').addEventListener('change', ev => { oda.zemin = ev.target.value; odaKur(); });
+renkleriCiz($('duvarRenkleri'), DUVAR_RENKLERI, oda.duvar, c => { oda.duvar = c; duvarMat.color.set(c); });
+
+$('aci').addEventListener('input', ev => {
+  if (!secili) return;
+  if (!aciyaCevir(secili, THREE.MathUtils.degToRad(+ev.target.value))) {
+    uyar('Bu açıda duvara ya da başka bir ürüne çarpıyor');
+    seciliGuncelle();
+  }
+});
+
+function katalogCiz(defs) {
+  const el = $('katalog');
+  el.innerHTML = '';
+  for (const def of defs) {
+    const b = document.createElement('button');
+    b.className = 'urun';
+    const olcu = def.duz ? `${cm(def.g)}×${cm(def.d)} cm` : `${cm(def.g)}×${cm(def.d)}×${cm(def.y)} cm`;
+    b.innerHTML = `<img alt="" src="${def.onizleme}"><b>${def.ad}</b><span>${olcu}</span><span>${fiyatYaz(def.fiyat)}</span>`;
+    b.onclick = () => urunEkle(def);
+    el.appendChild(b);
+  }
+}
+
+$('don15').onclick = () => secili && dondur(secili, -Math.PI / 12);
+$('don90').onclick = () => secili && dondur(secili, -Math.PI / 2);
+$('sil').onclick = () => secili && esyaSil(secili);
+// Odayı boşaltmak iki tıklama ister: ilki onay sorar, 3 sn içinde ikincisi boşaltır
+let temizleZaman;
+function temizleSifirla() {
+  clearTimeout(temizleZaman);
+  $('temizle').classList.remove('onay');
+  $('temizle').textContent = 'Odayı boşalt';
+}
+$('temizle').onclick = () => {
+  const b = $('temizle');
+  if (!esyalar.length) return;
+  if (!b.classList.contains('onay')) {
+    b.classList.add('onay');
+    b.textContent = 'Tümü kaldırılsın mı? Tekrar bas';
+    clearTimeout(temizleZaman);
+    temizleZaman = setTimeout(temizleSifirla, 3000);
+    return;
+  }
+  temizleSifirla();
+  [...esyalar].forEach(esyaSil);
+};
+$('gor3d').onclick = () => { ustten = false; $('gor3d').classList.add('aktif'); $('gorUst').classList.remove('aktif'); kameraAyarla(); };
+$('gorUst').onclick = () => { ustten = true; $('gorUst').classList.add('aktif'); $('gor3d').classList.remove('aktif'); kameraAyarla(); };
+
+addEventListener('keydown', ev => {
+  if (!$('incele').hidden) { if (ev.key === 'Escape') inceleKapat(); return; }
+  if (!secili || ev.target.closest('input, select')) return;
+  const k = ev.key.toLowerCase();
+  if (k === 'r') dondur(secili, -Math.PI / 2);
+  else if (k === 'e') dondur(secili, -Math.PI / 12);
+  else if (k === 'q') dondur(secili, Math.PI / 12);
+  else if (k === 'delete' || k === 'backspace') { ev.preventDefault(); esyaSil(secili); }
+  else if (k === 'escape') sec(null);
+});
+
+// ---------- Çizim döngüsü ----------
+new ResizeObserver(() => {
+  const w = sahneEl.clientWidth, h = sahneEl.clientHeight;
+  renderer.setSize(w, h, false);
+  composer?.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}).observe(sahneEl);
+
+const v = new THREE.Vector3();
+function ciz() {
+  controls.update();
+  // Kameranın önünde kalan duvarları gizle ki oda içi görünsün
+  for (const d of duvarlar) {
+    const [ix, iz] = d.userData.ic, [nx, nz] = d.userData.n;
+    d.visible = (camera.position.x - ix) * nx + (camera.position.z - iz) * nz > 0;
+  }
+  if (secili) {
+    v.set(secili.grup.position.x, secili.def.y + 0.15, secili.grup.position.z).project(camera);
+    etiket.style.left = ((v.x + 1) / 2) * sahneEl.clientWidth + 'px';
+    etiket.style.top = ((1 - v.y) / 2) * sahneEl.clientHeight + 'px';
+    etiket.hidden = v.z > 1;
+  }
+  if (composer) composer.render(); else renderer.render(scene, camera);
+}
+renderer.setAnimationLoop(ciz);
+
+// ---------- Başlangıç ----------
+odaKur();
+kameraAyarla();
+listeGuncelle();
+aoKur();
+
+const modelliler = KATALOG.filter(d => d.model);
+const sonuclar = await Promise.allSettled(modelliler.map(d => modelHazirla(d).finally(() => ilerleme(modelliler.length))));
+sonuclar.forEach(s => s.status === 'rejected' && console.warn(s.reason));
+const hazir = KATALOG.filter(d => !d.model || d.sablon);
+if (sonuclar.some(s => s.status === 'rejected')) uyar('Bazı ürünlerin 3D modeli yüklenemedi');
+onizlemeleriCiz(hazir);
+katalogCiz(hazir);
+$('yukleniyor').hidden = true;
+
+// Örnek salon düzeni; yeri doluysa ürün en yakın boş yere konur
+function yerlestir(ad, x, z, rot = 0) {
+  const def = hazir.find(d => d.ad === ad);
+  if (!def) return;
+  const it = esyaOlustur(def);
+  dondurAyarla(it, rot);
+  if (uygunMu(it, x, z, it.rot)) return konum(it, x, z);
+  const yer = bosYerBul(it);
+  if (!yer) return esyaSil(it);
+  dondurAyarla(it, yer[2]);
+  konum(it, yer[0], yer[1]);
+}
+yerlestir('Halı', 0, 0.3);
+yerlestir('TV Ünitesi', 0, -oda.L / 2 + 0.27);
+yerlestir('Chester Kanepe', 0, 1.5, Math.PI);
+yerlestir('Orta Sehpa', 0, 0.25);
+yerlestir('Klasik Berjer', -1.6, 0.3, Math.PI / 2);
+yerlestir('Saksı Bitkisi', 1.8, -2.05);
+listeGuncelle();
+</script>

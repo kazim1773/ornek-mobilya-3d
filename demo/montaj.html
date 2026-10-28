@@ -1,0 +1,172 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kitaplık Montajı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Tam ekran 3D sahne; altta ince bir kontrol şeridi, sol üstte o an yerine oturan parçanın adı */
+  :root {
+    --sahne: #efeeea;
+    --ink: #171918;
+    --muted: #6f736f;
+    --panel: rgba(255, 255, 255, 0.82);
+    --line: rgba(23, 25, 24, 0.1);
+    --accent: #9a7b4f;
+    --body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --sahne: #1b1d1c; --ink: #eceeec; --muted: #9da29e; --panel: rgba(30, 33, 31, 0.85); --line: rgba(255,255,255,0.1); --accent: #c9a676; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --sahne: #1b1d1c; --ink: #eceeec; --muted: #9da29e; --panel: rgba(30, 33, 31, 0.85); --line: rgba(255,255,255,0.1); --accent: #c9a676; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--sahne); color: var(--ink); font: 15px/1.5 var(--body); overflow: hidden; }
+  #sahne { position: fixed; inset: 0; }
+  #sahne canvas { width: 100%; height: 100%; }
+  .baslik { position: fixed; top: calc(20px + env(safe-area-inset-top, 0px)); left: max(24px, env(safe-area-inset-left, 0px)); right: 24px; pointer-events: none; display: grid; gap: 6px; }
+  .baslik .ust { font: 500 12px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .baslik h1 { margin: 0; font-weight: 600; font-size: clamp(22px, 3vw, 30px); letter-spacing: -0.02em; }
+  #parca { font: 500 13px var(--mono); color: var(--accent); min-height: 1.5em; transition: opacity .25s; }
+  .olcu { font: 400 13px var(--mono); color: var(--muted); }
+  .serit {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    width: min(720px, calc(100% - 32px)); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 12px 16px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(12px);
+  }
+  .serit button.dugme { height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 500 14px var(--body); cursor: pointer; }
+  .serit button.dugme.ana { background: var(--ink); color: var(--sahne); border-color: var(--ink); }
+  .serit input[type=range] { flex: 1; min-width: 140px; accent-color: var(--accent); }
+  .malzemeler { display: flex; gap: 8px; }
+  .malzeme { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; box-shadow: 0 0 0 1px var(--line); background-size: 300%; background-position: center; cursor: pointer; }
+  .malzeme.secili { box-shadow: 0 0 0 2px var(--ink); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #yukleniyor { position: fixed; inset: 0; display: grid; place-items: center; color: var(--muted); font: 500 13px var(--mono); }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+} }
+</script>
+
+<div id="sahne"></div>
+<div id="yukleniyor">Malzemeler yükleniyor…</div>
+
+<div class="baslik">
+  <span class="ust">Ölçüye özel üretim · Montaj</span>
+  <h1>Kitaplık, parça parça</h1>
+  <span class="olcu" id="olcu"></span>
+  <span id="parca"></span>
+</div>
+
+<div class="serit">
+  <button class="dugme ana" id="oynat">Duraklat</button>
+  <button class="dugme" id="bastan">Baştan oynat</button>
+  <input type="range" id="zaman" min="0" max="1" step="0.001" value="0" aria-label="Montaj ilerlemesi">
+  <div class="malzemeler" id="malzemeler"></div>
+</div>
+
+<script type="module">
+import * as M from './mobilya.js';
+
+// Gösterilen kitaplık (cm). Ölçüye özel sitede bu değerler müşterinin girdiği ölçülerden gelir.
+const OLCU = { genislik: 200, yukseklik: 190, derinlik: 38, sutun: 4, satir: 5, arkalik: true, alt: 'kapak', taban: 'ayak' };
+const MALZEMELER = [
+  { id: 'eiche', ad: 'Yağlı meşe', tanim: { tur: 'ahsap', dosya: 'eiche' }, onizleme: 'dokular/eiche-renk.jpg' },
+  { id: 'nussbaum', ad: 'Amerikan cevizi', tanim: { tur: 'ahsap', dosya: 'nussbaum' }, onizleme: 'dokular/nussbaum-renk.jpg' },
+  { id: 'raeuchereiche', ad: 'Füme meşe', tanim: { tur: 'ahsap', dosya: 'raeuchereiche' }, onizleme: 'dokular/raeuchereiche-renk.jpg' },
+  { id: 'weiss', ad: 'Beyaz mat lake', tanim: { tur: 'lak', renk: '#efede8' }, renk: '#efede8' },
+];
+// Parça adlarının Türkçesi (üretim listesindeki Almanca adlardan)
+const AD = {
+  Seitenwand: 'Yan dikme', Boden: 'Alt tabla', Deckel: 'Üst tabla', Mittelwand: 'Ara dikme', Fachboden: 'Raf',
+  Rückwand: 'Arkalık', Tür: 'Kapak', Schubladenfront: 'Çekmece önü', Griff: 'Kulp', Fuß: 'Ayak', Sockelblende: 'Kaide',
+};
+
+const $ = id => document.getElementById(id);
+const sahneRengi = () => getComputedStyle(document.documentElement).getPropertyValue('--sahne').trim();
+const v = new M.Vitrin($('sahne'), { etkilesim: false, arkaplan: sahneRengi() });
+v.kadrajPayi = 1.5;
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => v.arkaplan(sahneRengi()));
+new MutationObserver(() => v.arkaplan(sahneRengi())).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+let malzeme = MALZEMELER[0];
+function kur() {
+  const govde = v.malzemeler.al(malzeme.tanim);
+  const m = { govde, on: govde, metal: v.malzemeler.al({ tur: 'metal', renk: '#1e1f1f' }) };
+  const nesne = M.regalYap(OLCU, m, { govde: malzeme.ad, on: malzeme.ad });
+  M.dekorEkle(nesne, 11);
+  v.koy(nesne);
+  M.montajAyarla(nesne, t);
+  $('olcu').textContent = `${OLCU.genislik * 10} × ${OLCU.yukseklik * 10} × ${OLCU.derinlik * 10} mm · ${malzeme.ad} · ${nesne.parcalar.filter(p => p.liste).length} parça`;
+}
+
+// Zaman çizelgesi (saniye): parçalar oturur, bekler, dekor görünür, kamera döner, sonra yavaşça yeniden açılır
+const MONTAJ = 6.5, BEKLE = 4.5, SOKUM = 2.5, TUR = MONTAJ + BEKLE + SOKUM;
+let saat = 0, oynuyor = true, son = performance.now(), t = 0, elle = false;
+const yumusak = x => x * x * (3 - 2 * x);
+
+function ilerlemeyeGore(s) {
+  if (s < MONTAJ) return s / MONTAJ;
+  if (s < MONTAJ + BEKLE) return 1;
+  return 1 - yumusak((s - MONTAJ - BEKLE) / SOKUM);
+}
+
+let sonParca = '';
+v.onKare = () => {
+  const simdi = performance.now(), dt = Math.min(0.05, (simdi - son) / 1000);
+  son = simdi;
+  if (oynuyor && !elle) {
+    saat = (saat + dt) % TUR;
+    t = ilerlemeyeGore(saat);
+    $('zaman').value = t;
+  }
+  if (!v.nesne) return;
+  M.montajAyarla(v.nesne, t);
+  v.animasyonda = t > 0 && t < 1;
+  if (v.animasyonda) v.golgeKirli = true;
+  // Kamera, montaj boyunca soldan sağa yavaşça süzülür
+  const k = oynuyor && !elle ? saat / TUR : t;
+  v.aci.yatay = -0.55 + 1.0 * k;
+  v.aci.dikey = 0.22 - 0.08 * t;
+  // Parçalar dağınıkken kamera geri çekilir, birleştikçe yaklaşır
+  v.kadrajPayi = 1.12 + 0.4 * (1 - yumusak(t));
+  v.cercevele(true);
+  // O an yerine oturmakta olan parçanın adı
+  let ad = '';
+  if (t >= 1) ad = 'Monte edildi';
+  else for (const p of v.nesne.parcalar) {
+    const yerel = (t - p.mesh.userData.sira * 0.55) / 0.45;
+    if (yerel > 0 && yerel < 1) ad = AD[p.ad] || p.ad;
+  }
+  if (ad !== sonParca) { $('parca').textContent = ad; sonParca = ad; }
+};
+
+// Kontroller
+$('oynat').onclick = () => {
+  oynuyor = !oynuyor;
+  $('oynat').textContent = oynuyor ? 'Duraklat' : 'Oynat';
+  if (oynuyor) saat = t >= 1 ? MONTAJ : t * MONTAJ;
+};
+$('bastan').onclick = () => { saat = 0; oynuyor = true; $('oynat').textContent = 'Duraklat'; };
+$('zaman').addEventListener('input', e => { elle = true; oynuyor = false; $('oynat').textContent = 'Oynat'; t = +e.target.value; });
+$('zaman').addEventListener('change', () => { elle = false; saat = t >= 1 ? MONTAJ : t * MONTAJ; });
+
+$('malzemeler').innerHTML = MALZEMELER.map((m, i) =>
+  `<button class="malzeme${i ? '' : ' secili'}" title="${m.ad}" aria-label="${m.ad}" data-i="${i}" style="${m.onizleme ? `background-image:url(${m.onizleme})` : `background:${m.renk}`}"></button>`).join('');
+$('malzemeler').querySelectorAll('.malzeme').forEach(b => b.onclick = () => {
+  malzeme = MALZEMELER[+b.dataset.i];
+  $('malzemeler').querySelectorAll('.malzeme').forEach(x => x.classList.toggle('secili', x === b));
+  kur();
+});
+
+// Hareketi azalt tercihi: animasyon yerine monte edilmiş hali göster
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) { oynuyor = false; t = 1; $('oynat').textContent = 'Oynat'; }
+
+await v.hazir;
+kur();
+$('yukleniyor').hidden = true;
+</script>

@@ -1,0 +1,247 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Holz &amp; Maß</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Tek görünüm: render edilen açık renkli stüdyo karelerine göre açık bir sayfa (koyu temaya geçmez, bilinçli seçim).
+     Yerleşim: üstte ince başlık; 400vh yüksekliğinde bir bölüm içinde ekrana yapışan tam ekran görüntü,
+     kaydırma ilerlemesi kare numarasına çevrilir; altta ürün künyesi. */
+  :root {
+    --duvar: #e7e5df;
+    --kagit: #f3f2ee;
+    --ink: #1a1b19;
+    --muted: #6b6c66;
+    --line: rgba(26, 27, 25, 0.14);
+    --mese: #a8834f;
+    --display: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { background: var(--duvar); }
+  body { margin: 0; background: var(--duvar); color: var(--ink); font: 16px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--duvar); }
+  .kap { padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+
+  header { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 5; }
+  header .kap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; }
+  .logo { font-family: var(--display); font-size: 26px; letter-spacing: -0.01em; }
+  .logo em { color: var(--mese); }
+  .diller { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, 0.55); border: 1px solid var(--line); backdrop-filter: blur(8px); }
+  .diller button { border: 0; background: transparent; color: var(--muted); font: 500 12px var(--mono); letter-spacing: 0.06em; padding: 6px 10px; border-radius: 999px; cursor: pointer; }
+  .diller button.aktif { background: var(--ink); color: var(--kagit); }
+
+  .montaj { height: 420vh; position: relative; }
+  .yapiskan { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* Yazının arkasında soldan sağa açılan duvar rengi perde: kitaplığın üstüne gelse de okunur kalır */
+  .yapiskan::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(90deg, rgba(231, 229, 223, 0.92) 0%, rgba(231, 229, 223, 0.7) 26%, rgba(231, 229, 223, 0) 48%); }
+  .metin { position: absolute; z-index: 1; left: max(24px, env(safe-area-inset-left, 0px)); bottom: calc(clamp(32px, 9vh, 96px) + env(safe-area-inset-bottom, 0px)); width: min(460px, calc(100% - 48px)); height: 60vh; }
+  .sayac, .ipucu, #yuk { z-index: 1; }
+  .adim { position: absolute; left: 0; bottom: 0; width: 100%; opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s ease; pointer-events: none; }
+  .adim.gorunur { opacity: 1; transform: none; pointer-events: auto; }
+  .adim h1, .adim h2 { margin: 0 0 12px; font-family: var(--display); font-weight: 400; font-size: clamp(42px, 6vw, 84px); line-height: 0.98; letter-spacing: -0.02em; text-wrap: balance; }
+  .adim h1 em, .adim h2 em { color: var(--mese); }
+  .adim p { margin: 0; color: var(--muted); font-size: 17px; max-width: 38ch; }
+  .dugme { display: inline-flex; align-items: center; gap: 10px; margin-top: 22px; height: 48px; padding: 0 24px; border-radius: 999px; background: var(--ink); color: var(--kagit); font: 500 15px var(--body); text-decoration: none; }
+  .dugme:focus-visible, .diller button:focus-visible { outline: 2px solid var(--mese); outline-offset: 3px; }
+
+  .sayac { position: absolute; right: max(24px, env(safe-area-inset-right, 0px)); bottom: calc(clamp(32px, 9vh, 96px) + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; justify-items: end; font: 500 12px var(--mono); letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
+  .sayac b { font: 400 44px var(--display); color: var(--ink); letter-spacing: -0.02em; text-transform: none; font-variant-numeric: tabular-nums; }
+  .cizgi { width: 180px; height: 2px; background: var(--line); position: relative; }
+  .cizgi i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--ink); }
+
+  .ipucu { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font: 500 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); transition: opacity .4s; }
+  #yuk { position: absolute; inset: 0; display: grid; place-items: center; background: var(--duvar); font: 500 12px var(--mono); letter-spacing: 0.08em; color: var(--muted); transition: opacity .6s; }
+  #yuk.bitti { opacity: 0; pointer-events: none; }
+
+  .kunye { background: var(--kagit); border-top: 1px solid var(--line); }
+  .kunye .kap { max-width: 1200px; margin: 0 auto; padding-block: 80px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 48px; align-items: start; }
+  .kunye h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(36px, 4.5vw, 56px); line-height: 1; letter-spacing: -0.02em; text-wrap: balance; }
+  .kunye dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; border-top: 1px solid var(--line); }
+  .kunye dt, .kunye dd { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .kunye dt { color: var(--muted); font: 500 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding-right: 32px; align-self: center; }
+  .kunye dd { font-variant-numeric: tabular-nums; }
+  .kunye .not { grid-column: 1 / -1; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 760px) {
+    .yapiskan::after { background: linear-gradient(0deg, rgba(231, 229, 223, 0.95) 0%, rgba(231, 229, 223, 0.75) 30%, rgba(231, 229, 223, 0) 55%); }
+    .sayac { top: calc(76px + env(safe-area-inset-top, 0px)); bottom: auto; }
+    .sayac b { font-size: 32px; }
+    .cizgi { width: 120px; }
+    .kunye .kap { grid-template-columns: minmax(0, 1fr); padding-block: 56px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .adim, #yuk { transition: none; } }
+</style>
+
+<header><div class="kap">
+  <div class="logo">Holz <em>&amp;</em> Maß</div>
+  <div class="diller" role="group" aria-label="Sprache / Dil / Language">
+    <button data-dil="de" class="aktif">DE</button><button data-dil="tr">TR</button><button data-dil="en">EN</button>
+  </div>
+</div></header>
+
+<section class="montaj" id="montaj">
+  <div class="yapiskan">
+    <canvas id="tuval" role="img" aria-label=""></canvas>
+    <div class="metin">
+      <div class="adim" data-adim="0"><h1 data-m="a0b"></h1><p data-m="a0p"></p></div>
+      <div class="adim" data-adim="1"><h2 data-m="a1b"></h2><p data-m="a1p"></p></div>
+      <div class="adim" data-adim="2"><h2 data-m="a2b"></h2><p data-m="a2p"></p></div>
+      <div class="adim" data-adim="3"><h2 data-m="a3b"></h2><p data-m="a3p"></p><a class="dugme" href="#kunye" data-m="cta"></a></div>
+    </div>
+    <div class="sayac"><span data-m="parca"></span><b id="parcaNo">0 / 28</b><div class="cizgi"><i id="cizgi"></i></div></div>
+    <div class="ipucu" id="ipucu" data-m="kaydir"></div>
+    <div id="yuk">0%</div>
+  </div>
+</section>
+
+<section class="kunye" id="kunye"><div class="kap">
+  <h2 data-m="kb"></h2>
+  <dl>
+    <dt data-m="k1"></dt><dd>2000 × 1900 × 380 mm</dd>
+    <dt data-m="k2"></dt><dd data-m="k2d"></dd>
+    <dt data-m="k3"></dt><dd data-m="k3d"></dd>
+    <dt data-m="k4"></dt><dd data-m="k4d"></dd>
+    <dt data-m="k5"></dt><dd data-m="k5d"></dd>
+    <dd class="not" data-m="not"></dd>
+  </dl>
+</div></section>
+
+<script>
+// Metinler: Almanca (varsayılan), Türkçe, İngilizce
+const METIN = {
+  de: {
+    a0b: 'Maßgefertigt.<br><em>Bis auf den Millimeter.</em>', a0p: 'Ihr Regal entsteht aus Ihren Maßen. Scrollen Sie und sehen Sie, wie es zusammengesetzt wird.',
+    a1b: 'Erst die Rückwand,<br>dann der <em>Korpus.</em>', a1p: 'Jedes Bauteil wird einzeln zugeschnitten, gekantet und für die Montage vorbereitet.',
+    a2b: '28 Bauteile.<br><em>Ein Möbel.</em>', a2p: 'Eichenfurnierte Platten, 19 mm stark, mit geölter Oberfläche und schwarzen Stahlfüßen.',
+    a3b: 'Geliefert und<br><em>montiert.</em>', a3p: 'Unser Team baut Ihr Regal bei Ihnen auf und nimmt die Verpackung wieder mit.', cta: 'Details ansehen',
+    parca: 'Bauteil', kaydir: 'Scrollen', kb: 'Regal „Linie“ nach Maß',
+    k1: 'Maße (B × H × T)', k2: 'Material', k2d: 'Eiche furniert, geölt', k3: 'Aufbau', k3d: '4 Spalten · 5 Fächer · Türen unten · Rückwand',
+    k4: 'Lieferung', k4d: '4–6 Wochen, inklusive Montage', k5: 'Bauteile', k5d: '28 Platten + Griffe und Füße',
+    not: 'Alle Bilder dieser Animation wurden in Blender Cycles berechnet. Maße und Ausführung sind ein Beispiel.',
+  },
+  tr: {
+    a0b: 'Ölçünüze göre.<br><em>Milimetresine kadar.</em>', a0p: 'Kitaplığınız sizin ölçülerinizden üretilir. Aşağı kaydırın, nasıl birleştiğini görün.',
+    a1b: 'Önce arkalık,<br>sonra <em>gövde.</em>', a1p: 'Her parça tek tek kesilir, kenar bandı çekilir ve montaja hazırlanır.',
+    a2b: '28 parça.<br><em>Tek mobilya.</em>', a2p: '19 mm meşe kaplama levhalar, yağlı yüzey ve siyah çelik ayaklar.',
+    a3b: 'Teslim ve<br><em>montaj dahil.</em>', a3p: 'Ekibimiz kitaplığınızı evinizde kurar, ambalajları geri alır.', cta: 'Detayları gör',
+    parca: 'Parça', kaydir: 'Kaydırın', kb: '„Linie“ kitaplık, ölçüye özel',
+    k1: 'Ölçüler (G × Y × D)', k2: 'Malzeme', k2d: 'Meşe kaplama, yağlı', k3: 'Yapı', k3d: '4 sütun · 5 raf · altta kapaklar · arkalık',
+    k4: 'Teslimat', k4d: '4–6 hafta, montaj dahil', k5: 'Parçalar', k5d: '28 levha + kulplar ve ayaklar',
+    not: 'Bu animasyonun bütün kareleri Blender Cycles ile hesaplandı. Ölçü ve model örnektir.',
+  },
+  en: {
+    a0b: 'Made to measure.<br><em>Down to the millimetre.</em>', a0p: 'Your shelf is built from your measurements. Scroll and watch it come together.',
+    a1b: 'First the back,<br>then the <em>carcass.</em>', a1p: 'Every part is cut individually, edge-banded and prepared for assembly.',
+    a2b: '28 parts.<br><em>One piece.</em>', a2p: '19 mm oak-veneered panels with an oiled finish and black steel legs.',
+    a3b: 'Delivered and<br><em>assembled.</em>', a3p: 'Our team builds your shelf on site and takes the packaging away.', cta: 'See details',
+    parca: 'Part', kaydir: 'Scroll', kb: '“Linie” shelf, made to measure',
+    k1: 'Size (W × H × D)', k2: 'Material', k2d: 'Oak veneer, oiled', k3: 'Layout', k3d: '4 columns · 5 shelves · doors below · back panel',
+    k4: 'Delivery', k4d: '4–6 weeks, assembly included', k5: 'Parts', k5d: '28 panels plus handles and legs',
+    not: 'Every frame of this animation was rendered in Blender Cycles. Size and finish are an example.',
+  },
+};
+let dil = 'de';
+try { dil = localStorage.getItem('hm-dil') || (navigator.language || '').slice(0, 2); } catch {}
+if (!METIN[dil]) dil = 'de';
+function dilUygula() {
+  document.documentElement.lang = dil;
+  document.querySelectorAll('[data-m]').forEach(el => { el.innerHTML = METIN[dil][el.dataset.m]; });
+  document.querySelectorAll('[data-dil]').forEach(b => b.classList.toggle('aktif', b.dataset.dil === dil));
+  document.getElementById('tuval').setAttribute('aria-label', METIN[dil].a2b.replace(/<[^>]+>/g, ' '));
+}
+document.querySelectorAll('[data-dil]').forEach(b => b.onclick = () => {
+  dil = b.dataset.dil;
+  try { localStorage.setItem('hm-dil', dil); } catch {}
+  dilUygula();
+});
+dilUygula();
+
+// ---------- Kare dizisi ----------
+const KARE_SAYISI = 160, MONTAJ_KARE = 120, PARCA = 28;
+const yol = i => `kareler/kare_${String(i).padStart(4, '0')}.jpg`;
+const kareler = new Array(KARE_SAYISI);
+const tuval = document.getElementById('tuval'), cx = tuval.getContext('2d');
+let istenen = 0, cizilen = -1, yuklenen = 0;
+
+function boyutla() {
+  const o = Math.min(devicePixelRatio || 1, 2);
+  tuval.width = Math.round(tuval.clientWidth * o);
+  tuval.height = Math.round(tuval.clientHeight * o);
+  cizilen = -1;
+  ciz();
+}
+// En yakın yüklenmiş kareyi "cover" kırpmasıyla çiz; kitaplığın sağa yaslı olması için yatayda hafif sağa kayar
+const hazirMi = i => i >= 0 && i < KARE_SAYISI && kareler[i]?.complete && kareler[i].naturalWidth > 0;
+function ciz() {
+  let i = -1;
+  for (let d = 0; d < KARE_SAYISI && i < 0; d++) {
+    if (hazirMi(istenen - d)) i = istenen - d;
+    else if (hazirMi(istenen + d)) i = istenen + d;
+  }
+  if (i < 0 || i === cizilen) return;
+  const img = kareler[i];
+  const tw = tuval.width, th = tuval.height, iw = img.naturalWidth, ih = img.naturalHeight;
+  const olcek = Math.max(tw / iw, th / ih);
+  const w = iw * olcek, h = ih * olcek;
+  const dar = tw / th < 1;
+  cx.drawImage(img, dar ? (tw - w) * 0.62 : (tw - w) / 2, (th - h) / 2, w, h);
+  cizilen = i;
+}
+
+// Önce her 8. kare (hızlı önizleme), sonra aradakiler
+const sira = [];
+for (let s of [8, 4, 2, 1]) for (let i = 0; i < KARE_SAYISI; i += s) if (!sira.includes(i)) sira.push(i);
+const yukEl = document.getElementById('yuk');
+let akista = 0;
+function sonraki() {
+  while (akista < 6 && sira.length) {
+    const i = sira.shift();
+    const img = new Image();
+    img.decoding = 'async';
+    akista++;
+    img.onload = img.onerror = () => {
+      akista--;
+      yuklenen++;
+      yukEl.textContent = Math.round((yuklenen / KARE_SAYISI) * 100) + '%';
+      if (yuklenen >= 20) yukEl.classList.add('bitti');
+      cizilen = -1;
+      ciz();
+      sonraki();
+    };
+    img.src = yol(i + 1);
+    kareler[i] = img;
+  }
+}
+sonraki();
+
+// ---------- Kaydırma: ilerleme -> kare, metin adımı, parça sayacı ----------
+const bolum = document.getElementById('montaj');
+const adimlar = [...document.querySelectorAll('.adim')];
+const ESIK = [0, 0.18, 0.5, 0.86];
+function kaydir() {
+  const r = bolum.getBoundingClientRect();
+  const oran = -r.top / Math.max(1, r.height - innerHeight);
+  const p = Number.isFinite(oran) ? Math.min(1, Math.max(0, oran)) : 0;
+  istenen = Math.round(p * (KARE_SAYISI - 1));
+  const montaj = Math.min(1, istenen / (MONTAJ_KARE - 1));
+  document.getElementById('parcaNo').textContent = `${Math.round(montaj * PARCA)} / ${PARCA}`;
+  document.getElementById('cizgi').style.width = montaj * 100 + '%';
+  let a = 0;
+  ESIK.forEach((e, i) => { if (p >= e) a = i; });
+  adimlar.forEach((el, i) => el.classList.toggle('gorunur', i === a));
+  document.getElementById('ipucu').style.opacity = p > 0.02 ? 0 : 1;
+  ciz();
+}
+addEventListener('scroll', () => requestAnimationFrame(kaydir), { passive: true });
+new ResizeObserver(boyutla).observe(tuval);
+kaydir();
+</script>

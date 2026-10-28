@@ -1,0 +1,7 @@
+# Uygulama ve araç ayarları, geçici dosyalar
+.claude/
+__pycache__/
+*.pyc
+*.blend1
+*.tmp
+demo/test.html
