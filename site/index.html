@@ -174,13 +174,15 @@
   @media (max-aspect-ratio: 1/1) {
     .montaj.kapak .montaj-yapiskan { height: auto; min-height: 0; max-height: none; display: flex; flex-direction: column; background: #d2cdc7; }
     .montaj.kapak .montaj-yapiskan::after { display: none; }
-    .montaj.kapak video, .montaj.kapak .montaj-yedek { position: relative; inset: auto; width: 140%; margin-left: -20%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; flex: none; }
+    .montaj.kapak video, .montaj.kapak .montaj-yedek { position: relative; inset: auto; width: 130%; margin-left: -15%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; flex: none; }
     /* Telefonda gerçek ekranın bir kısmını tarayıcı çubukları kaplar: uzun açıklamalar gizlenir, başlık ve düğmeler ilk ekrana sığar */
     .montaj.kapak .montaj-adim p { display: none; }
     /* Yazılar videonun altında; bütün adımlar aynı hücrede üst üste durur, alan en uzun adım kadar olur */
-    .montaj.kapak .montaj-metin { position: relative; left: auto; bottom: auto; width: auto; height: auto; display: grid; padding: 16px 20px 32px; }
-    .montaj.kapak .montaj-adim { position: relative; grid-area: 1 / 1; align-self: start; gap: 8px; }
-    .montaj.kapak .montaj-adim h1, .montaj.kapak .montaj-adim h2 { font-size: 1.95rem; }
+    .montaj.kapak .montaj-metin { position: relative; left: auto; bottom: auto; width: auto; height: auto; display: grid; padding: 12px 20px 28px; }
+    .montaj.kapak .montaj-adim { position: relative; grid-area: 1 / 1; align-self: start; gap: 6px; }
+    .montaj.kapak .montaj-adim h1, .montaj.kapak .montaj-adim h2 { font-size: 1.8rem; }
+    .montaj.kapak .montaj-eylemler { margin-top: 4px; }
+    .montaj.kapak .montaj-eylemler .dugme { min-height: 42px; padding: 0 18px; }
     /* Tekrar oynat düğmesi yazıların üstüne binmesin: videonun sağ üst köşesine */
     .montaj.kapak .montaj-tekrar { top: 12px; right: 12px; left: auto; bottom: auto; transform: none; }
   }

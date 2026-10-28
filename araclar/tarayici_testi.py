@@ -103,6 +103,9 @@ with sync_playwright() as p:
         # Bu cihaz tanımının ekran alanı (390x664) Safari'nin üst ve alt çubukları düşülmüş halidir
         ("safari-iphone", "webkit", {}, p.devices["iPhone 14"]),
     ]
+    # İsteğe bağlı 3. argüman: yalnızca adı bu metni içeren ortamlar çalışır (ör. "iphone")
+    if len(sys.argv) > 3:
+        ortamlar = [o for o in ortamlar if sys.argv[3] in o[0]]
     sonuclar = []
     for ortam in ortamlar:
         try:
