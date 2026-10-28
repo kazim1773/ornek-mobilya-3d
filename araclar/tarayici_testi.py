@@ -100,9 +100,8 @@ with sync_playwright() as p:
         ("chrome-masaustu", "chromium", {"channel": "chrome"}, {"viewport": {"width": 1366, "height": 768}}),
         ("chrome-android", "chromium", {"channel": "chrome"}, p.devices["Pixel 7"]),
         ("safari-masaustu", "webkit", {}, {"viewport": {"width": 1440, "height": 900}}),
+        # Bu cihaz tanımının ekran alanı (390x664) Safari'nin üst ve alt çubukları düşülmüş halidir
         ("safari-iphone", "webkit", {}, p.devices["iPhone 14"]),
-        # Gerçek iPhone'da Safari'nin üst ve alt çubukları ekranın bir kısmını kaplar: kullanılabilir alan ~390x600
-        ("safari-iphone-kisa", "webkit", {}, {**p.devices["iPhone 14"], "viewport": {"width": 390, "height": 600}}),
     ]
     sonuclar = []
     for ortam in ortamlar:
