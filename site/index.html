@@ -14,12 +14,12 @@
   /* Yerleşim: ortalanmış 1240px kap; üstte duyuru şeridi + yapışkan başlık; görünümler hash ile değişir
      (anasayfa, koleksiyon/kategori, ürün, planlayıcı, mağazalar); sepet sağdan açılan çekmece. */
   :root {
-    --paper: #f3f3ef;
+    --paper: #f5f3ee;
     --surface: #ffffff;
-    --tile: #e9e9e3;
+    --tile: #ece9e2;
     --ink: #1a1d1b;
     --muted: #666d68;
-    --line: #dddeda;
+    --line: #e1ded7;
     --accent: #2f5d50;
     --accent-ink: #ffffff;
     --accent-soft: #e2ebe7;
@@ -70,27 +70,61 @@
   .dugme.kucuk { min-height: 38px; padding: 0 16px; font-size: 14px; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-  /* Duyuru ve başlık */
-  .duyuru { background: var(--band); color: var(--band-ink); font-size: 13px; }
-  .duyuru .kap { display: flex; justify-content: center; gap: 28px; padding-block: 8px; flex-wrap: wrap; text-align: center; }
-  .duyuru span:not(:first-child) { color: var(--band-muted); }
-  .baslik { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); border-bottom: 1px solid var(--line); }
-  .baslik .ust { display: flex; align-items: center; gap: 20px; padding-block: 14px; }
-  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: -0.03em; white-space: nowrap; }
-  .logo svg { width: 30px; height: 30px; flex: none; }
-  .arama { flex: 1; max-width: 420px; margin-left: auto; position: relative; }
-  .arama input { width: 100%; height: 42px; padding: 0 16px 0 40px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; font-size: 15px; }
-  .arama svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; color: var(--muted); }
+  /* Üst şerit, başlık ve kategori çubuğu */
+  .duyuru { background: var(--band); color: var(--band-muted); font-size: 13px; }
+  .duyuru .kap { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-block: 7px; }
+  .duyuru nav, .duyuru .sag { display: flex; gap: 20px; }
+  .duyuru a { text-decoration: none; }
+  .duyuru a:hover { color: var(--band-ink); }
+  .duyuru .sag b { color: var(--band-ink); font-weight: 600; }
+  .baslik { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); box-shadow: 0 1px 0 var(--line); }
+  .baslik .ust { display: flex; align-items: center; gap: 28px; padding-block: 16px; }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-weight: 700; font-size: 23px; letter-spacing: -0.03em; white-space: nowrap; }
+  .logo svg { width: 32px; height: 32px; flex: none; }
+  .arama { flex: 1; max-width: 560px; margin-inline: auto; position: relative; }
+  .arama input { width: 100%; height: 46px; padding: 0 18px 0 46px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; font-size: 15px; transition: border-color .15s, box-shadow .15s, background .15s; }
+  .arama input:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .arama svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 17px; color: var(--muted); }
   .ikonlar { display: flex; gap: 6px; }
-  .ikon { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 12px; border-radius: 999px; border: 0; background: transparent; color: var(--ink); font: 500 14px var(--body); text-decoration: none; cursor: pointer; }
+  .ikon { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border-radius: 12px; border: 0; background: transparent; color: var(--ink); font: 500 14px var(--body); text-decoration: none; cursor: pointer; }
   .ikon:hover { background: var(--paper); }
-  .ikon svg { width: 20px; height: 20px; }
+  .ikon svg { width: 22px; height: 22px; }
   .sayac { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 600; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums; }
-  nav.menu { display: flex; gap: 4px; padding-bottom: 10px; overflow-x: auto; scrollbar-width: none; }
-  nav.menu a { padding: 7px 14px; border-radius: 999px; text-decoration: none; font-size: 15px; font-weight: 500; white-space: nowrap; color: var(--muted); }
-  nav.menu a:hover, nav.menu a.aktif { color: var(--ink); background: var(--paper); }
-  nav.menu a.planlayici-link { color: var(--accent); background: var(--accent-soft); margin-left: auto; }
-  nav.menu a.planlayici-link b { font-weight: 700; }
+  .menu-cubuk { border-top: 1px solid var(--line); }
+  nav.menu { display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  nav.menu::-webkit-scrollbar { display: none; }
+  nav.menu a, nav.menu .menu-ac {
+    position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 14px; border: 0; background: none;
+    color: var(--ink); font: 500 15px var(--body); text-decoration: none; white-space: nowrap; cursor: pointer;
+  }
+  nav.menu a::after, nav.menu .menu-ac::after {
+    content: ""; position: absolute; left: 14px; right: 14px; bottom: 0; height: 2px; border-radius: 2px;
+    background: var(--accent); transform: scaleX(0); transition: transform .2s;
+  }
+  nav.menu a:hover::after, nav.menu a.aktif::after, nav.menu .menu-ac:hover::after, nav.menu .menu-ac.aktif::after, nav.menu .menu-ac[aria-expanded="true"]::after { transform: scaleX(1); }
+  nav.menu .menu-ac svg { width: 12px; height: 12px; transition: transform .2s; }
+  nav.menu .menu-ac[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .yeni-isaret { padding: 2px 7px; border-radius: 999px; background: var(--sale); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+  nav.menu a.indirim-link { color: var(--sale); font-weight: 600; }
+  nav.menu a.planlayici-link { margin: 6px 0 6px auto; padding: 9px 18px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  nav.menu a.planlayici-link::after { display: none; }
+  /* Kendin tasarla açılır menüsü: kategori çubuğunun altında, sayfa genişliğinde */
+  .mega { position: absolute; left: 0; right: 0; top: 100%; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 24px 40px rgba(0, 0, 0, .12); }
+  .mega .kap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: 32px; padding-block: 24px 28px; }
+  .mega .giris { display: grid; gap: 10px; align-content: start; }
+  .mega .giris p { color: var(--muted); font-size: 14px; }
+  .mega .giris .dugme { justify-self: start; margin-top: 6px; }
+  .tasarla-kartlar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .tasarla-kart {
+    display: grid; gap: 6px; align-content: start; padding: 10px 10px 16px; border: 1px solid var(--line); border-radius: 18px;
+    background: var(--surface); text-decoration: none; transition: border-color .2s, transform .2s, box-shadow .2s;
+  }
+  .tasarla-kart:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 0, 0, .08); }
+  .tasarla-kart img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; background: #ebebeb; margin-bottom: 6px; }
+  .tasarla-kart b, .tasarla-kart span { padding-inline: 6px; }
+  .tasarla-kart b { font-family: var(--display); font-size: 1.25rem; letter-spacing: -0.01em; }
+  .tasarla-kart span { color: var(--muted); font-size: 14px; }
+  .tasarla-kart .git { color: var(--accent); font-weight: 600; }
 
   /* Ana sayfa */
   .kahraman { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: center; padding-block: 56px 40px; }
@@ -278,7 +312,45 @@
   footer.alt-bilgi a { text-decoration: none; }
   footer.alt-bilgi .telif { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 20px; color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
+  /* Yuvarlak kısayollar */
+  .kisayollar { display: flex; gap: 18px; justify-content: space-between; overflow-x: auto; padding: 30px 2px 6px; scrollbar-width: none; }
+  .kisayollar::-webkit-scrollbar { display: none; }
+  .kisayol { flex: none; display: grid; justify-items: center; gap: 10px; width: 104px; text-decoration: none; font-size: 14px; font-weight: 500; text-align: center; line-height: 1.25; }
+  .kisayol i { width: 96px; height: 96px; border-radius: 50%; background: var(--tile); display: grid; place-items: center; overflow: hidden; border: 2px solid transparent; transition: border-color .2s; }
+  .kisayol:hover i { border-color: var(--accent); }
+  .kisayol img { width: 76%; height: 76%; object-fit: contain; }
+  .kisayol img.dolu { width: 100%; height: 100%; object-fit: cover; }
+  .kisayol.ozel i { background: #ebebeb; }
+  /* Kendin tasarla bandı */
+  .tasarla-bant { margin-top: 32px; background: var(--surface); border-block: 1px solid var(--line); }
+  .tasarla-bant .kap { display: grid; gap: 28px; padding-block: 56px; }
+  .tasarla-bant .ust-satir { display: flex; justify-content: space-between; align-items: end; gap: 20px; flex-wrap: wrap; }
+  .tasarla-bant .ust-satir p { max-width: 58ch; margin-top: 10px; color: var(--muted); }
+  .adim-rozet { display: flex; gap: 8px; flex-wrap: wrap; }
+  .adim-rozet span { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; background: var(--paper); font-size: 13px; font-weight: 500; }
+  .adim-rozet b { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 12px; }
+  /* Kampanya kutuları */
+  .kampanyalar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+  .kampanya { position: relative; overflow: hidden; display: grid; align-content: end; gap: 10px; min-height: 260px; padding: 32px; border-radius: 20px; background: var(--band); color: #fff; text-decoration: none; }
+  .kampanya img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+  .kampanya:hover img { transform: scale(1.03); }
+  .kampanya::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(0deg, rgba(10, 14, 12, .86), rgba(10, 14, 12, .35) 60%, rgba(10, 14, 12, .05)); }
+  .kampanya.duz::before { display: none; }
+  .kampanya > :not(img) { position: relative; z-index: 2; }
+  .kampanya .etiket { color: rgba(255, 255, 255, .75); }
+  .kampanya h3 { font-size: clamp(1.4rem, 2.4vw, 1.95rem); }
+  .kampanya p { max-width: 42ch; color: rgba(255, 255, 255, .85); }
+  .kampanya .dugme { justify-self: start; margin-top: 6px; background: #fff; border-color: #fff; color: #1a1d1b; }
+  .kart figure { transition: box-shadow .25s; }
+  .kart:hover figure { box-shadow: 0 12px 30px rgba(0, 0, 0, .08); }
+  /* Tasarla sayfası */
+  .tasarla-sekmeler { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tasarla-sekmeler .sekme { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px 0 6px; text-decoration: none; }
+  .tasarla-sekmeler .sekme img { width: 40px; height: 30px; object-fit: cover; border-radius: 999px; }
+
   @media (max-width: 980px) {
+    .kampanyalar, .mega .kap { grid-template-columns: minmax(0, 1fr); }
+    .mega .giris { display: none; }
     .kahraman, .bant .kap, .urun, .showroom { grid-template-columns: minmax(0, 1fr); }
     .kahraman { gap: 28px; padding-block: 32px; }
     .hizmetler, .alanlar, .izgara { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -292,9 +364,26 @@
     /* Telefonda üst kısım sıkılaşır: kapak animasyonu ve başlığı ilk ekrana sığsın */
     .duyuru { display: none; }
     .baslik .ust { padding-block: 10px 8px; gap: 8px; }
+    .arama input { height: 38px; border-radius: 10px; }
+    .ikon { padding: 0 8px; }
+    nav.menu a, nav.menu .menu-ac { padding: 9px 11px; font-size: 14px; }
+    nav.menu a::after, nav.menu .menu-ac::after { left: 11px; right: 11px; }
+    nav.menu a.planlayici-link { margin-left: 4px; padding: 6px 14px; }
+    .mega .kap { padding-block: 14px 16px; }
+    .mega .tasarla-kartlar { gap: 8px; }
+    .mega .tasarla-kart { padding: 6px 6px 10px; border-radius: 14px; }
+    .mega .tasarla-kart b { font-size: 0.95rem; }
+    .mega .tasarla-kart span { display: none; }
+    .tasarla-bant .kap { padding-block: 40px; }
+    .tasarla-bant .tasarla-kartlar, .tasarla-secim .tasarla-kartlar { grid-template-columns: minmax(0, 1fr); }
+    .kisayollar { gap: 12px; padding-top: 22px; }
+    .kisayol { width: 76px; font-size: 13px; }
+    .kisayol i { width: 70px; height: 70px; }
+    .kampanya { min-height: 220px; padding: 22px; }
+    .tasarla-sekmeler .sekme { padding-right: 12px; }
     .logo { font-size: 19px; }
     .logo svg { width: 26px; height: 26px; }
-    .arama input, .ikon { height: 38px; }
+    .ikon { height: 38px; }
     nav.menu { padding-bottom: 6px; }
     nav.menu a { padding: 5px 12px; font-size: 14px; }
     .hizmetler { grid-template-columns: minmax(0, 1fr); }
@@ -316,9 +405,8 @@
 </style>
 
 <div class="duyuru"><div class="kap">
-  <span>Peşin fiyatına 9 taksit</span>
-  <span>2 haftada ücretsiz teslimat ve kurulum</span>
-  <span>Yeni: ürünleri odanızda 3D olarak deneyin</span>
+  <nav aria-label="Kurumsal"><a href="#magazalar">Showroom</a><a href="#tasarla">Ölçüye özel üretim</a><a href="#planlayici">3D oda planlayıcı</a></nav>
+  <div class="sag"><span>Peşin fiyatına 9 taksit</span><span>Ücretsiz teslimat ve kurulum</span><b>0 (224) 000 00 00</b></div>
 </div></div>
 
 <header class="baslik">
@@ -344,16 +432,30 @@
         </button>
       </div>
     </div>
+  </div>
+  <div class="menu-cubuk"><div class="kap">
     <nav class="menu" aria-label="Kategoriler">
       <a href="#koleksiyon" data-yol="koleksiyon">Tüm ürünler</a>
       <a href="#oturma-odasi" data-yol="oturma-odasi">Oturma Odası</a>
       <a href="#yemek-odasi" data-yol="yemek-odasi">Yemek Odası</a>
       <a href="#depolama" data-yol="depolama">Depolama</a>
       <a href="#dekorasyon" data-yol="dekorasyon">Dekorasyon</a>
-      <a href="#indirim" data-yol="indirim">İndirimdekiler</a>
-      <a href="#tasarla" data-yol="tasarla">Kendin Tasarla</a>
-      <a href="#planlayici" data-yol="planlayici" class="planlayici-link"><b>3D</b>&nbsp;Odanı Tasarla</a>
+      <button class="menu-ac" id="tasarlaMenu" data-yol="tasarla" aria-expanded="false" aria-controls="mega">Kendin Tasarla <span class="yeni-isaret">Yeni</span>
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m2.5 4.5 3.5 3.5 3.5-3.5"/></svg></button>
+      <a href="#indirim" data-yol="indirim" class="indirim-link">İndirim</a>
+      <a href="#planlayici" data-yol="planlayici" class="planlayici-link">3D Odanı Tasarla</a>
     </nav>
+  </div></div>
+  <div class="mega" id="mega" hidden>
+    <div class="kap">
+      <div class="giris">
+        <span class="etiket">Ölçüye özel üretim</span>
+        <h3>Kendin tasarla</h3>
+        <p>Ölçünü gir, malzemeni ve rengini seç; 3D görünüm ve fiyat her adımda güncellenir. Tasarımını odanda deneyebilirsin.</p>
+        <a class="dugme kucuk cizgi" href="#tasarla">Nasıl çalışır?</a>
+      </div>
+      <div class="tasarla-kartlar" id="megaKartlar"></div>
+    </div>
   </div>
 </header>
 
@@ -376,7 +478,23 @@
       </div>
     </section>
 
-    <div class="kap" style="padding-top:32px"><div class="hizmetler">
+    <div class="kap"><nav class="kisayollar" id="kisayollar" aria-label="Hızlı erişim"></nav></div>
+
+    <section class="tasarla-bant">
+      <div class="kap">
+        <div class="ust-satir">
+          <div>
+            <span class="etiket">Yeni · Ölçüye özel üretim</span>
+            <h2 style="margin-top:10px">Kendin tasarla, biz üretelim.</h2>
+            <p>Dolabını, komodinini ya da masanı santimine kadar kendi ölçüne göre tasarla. Her seçimde 3D görünüm ve fiyat anında güncellenir; beğendiğin tasarımı odanda dene.</p>
+          </div>
+          <div class="adim-rozet"><span><b>1</b>Ölçünü gir</span><span><b>2</b>Malzeme ve rengini seç</span><span><b>3</b>Odanda dene</span></div>
+        </div>
+        <div class="tasarla-kartlar" id="bantKartlar"></div>
+      </div>
+    </section>
+
+    <div class="kap" style="padding-top:40px"><div class="hizmetler">
       <div class="hizmet"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h13v11H3zM16 12h5l4 4v3h-9"/><circle cx="8" cy="20.5" r="2.2"/><circle cx="20" cy="20.5" r="2.2"/></svg><b>Ücretsiz teslimat</b><span>Randevulu, 2 hafta içinde</span></div>
       <div class="hizmet"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 5.5a5 5 0 0 0-6.4 6.4L4 18.5 7.5 22l6.6-6.6a5 5 0 0 0 6.4-6.4l-3.2 3.2-2.8-.7-.7-2.8L17 5.5Z"/></svg><b>Ücretsiz kurulum</b><span>Montaj ekibimiz kurar, ambalajı alır</span></div>
       <div class="hizmet"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3 5 7v6c0 6 4 10 9 12 5-2 9-6 9-12V7l-9-4Z"/><path d="m10 14 3 3 5-6"/></svg><b>2 yıl garanti</b><span>İskelet ve mekanizmada</span></div>
@@ -402,6 +520,15 @@
       </div>
       <div class="izgara" id="oneCikanlar"></div>
     </div>
+
+    <div class="kap" style="padding-bottom:64px"><div class="kampanyalar">
+      <a class="kampanya" href="#planlayici"><img src="gorseller/salon.jpg" alt="" loading="lazy">
+        <span class="etiket">3D oda planlayıcı</span><h3>Almadan önce odanda gör.</h3>
+        <p>Odanın ölçülerini gir, mobilyaları yerleştir, gerçekçi ışıkla fotoğrafını çek.</p><span class="dugme kucuk">Odanı tasarla</span></a>
+      <a class="kampanya duz" href="#indirim">
+        <span class="etiket">Sezon fırsatları</span><h3>Seçili ürünlerde %17'ye varan indirim.</h3>
+        <p>Peşin fiyatına 9 taksit, ücretsiz teslimat ve kurulum.</p><span class="dugme kucuk">İndirimleri gör</span></a>
+    </div></div>
 
     <section class="bant">
       <div class="kap">
@@ -542,18 +669,21 @@
     </div>
   </section>
 
-  <!-- KENDİN TASARLA: ölçüye özel dolap konfigüratörü -->
+  <!-- KENDİN TASARLA: dolap, komodin ve masa tasarlayıcıları (planlayıcı sayfası ?mod=tasarla&tur=... ile) -->
   <section data-gorunum="tasarla" hidden>
     <div class="kap">
       <div class="planlayici-bas">
         <div>
-          <span class="etiket">Ölçüye özel üretim</span>
-          <h1 style="font-size:clamp(1.9rem,3.2vw,2.6rem);margin-top:8px">Dolabını kendin tasarla</h1>
-          <p>Ölçünü gir, bölmeleri, kapakları ve renkleri seç; fiyat her adımda güncellenir. Beğendiğin tasarımı sepete ekle ya da "Odamda dene" ile 3D odanda gör.</p>
+          <div class="kirinti"><a href="#anasayfa">Ana sayfa</a> / <a href="#tasarla">Kendin tasarla</a><span id="tasarlaKirinti"></span></div>
+          <h1 id="tasarlaBaslik" style="font-size:clamp(1.9rem,3.2vw,2.6rem);margin-top:8px">Ne tasarlamak istersin?</h1>
+          <p id="tasarlaAciklama">Ölçünü gir, malzemeni ve rengini seç; fiyat her adımda güncellenir. Beğendiğin tasarımı sepete ekle ya da "Odamda dene" ile 3D odanda gör.</p>
         </div>
-        <a class="dugme cizgi kucuk" href="#planlayici">3D odama geç</a>
       </div>
-      <div class="planlayici-cerceve" id="tasarlaCerceve"></div>
+      <div class="tasarla-secim" id="tasarlaSecim" style="padding-bottom:64px"><div class="tasarla-kartlar" id="sayfaKartlar"></div></div>
+      <div id="tasarlaAlan" hidden>
+        <div class="tasarla-sekmeler" id="tasarlaSekmeler"></div>
+        <div class="planlayici-cerceve" id="tasarlaCerceve"></div>
+      </div>
     </div>
   </section>
 
@@ -786,15 +916,70 @@ function planlayiciyaGonder(mesaj, git) {
   if (planlayiciHazir) cerceve.contentWindow.postMessage(mesaj, '*'); else kuyruk.push(mesaj);
   if (git) location.hash = 'planlayici';
 }
-// "Kendin tasarla" sekmesi: aynı planlayıcı sayfası yalnızca dolap konfigüratörüyle açılır (3D modeller yüklenmez)
+// ---------- Kendin tasarla: dolap, komodin ve masa ----------
+// Aynı planlayıcı sayfası yalnızca seçilen türün tasarlayıcısıyla açılır (oda ve 3D modeller yüklenmez)
+const TASARLA = [
+  { tur: 'dolap', ad: 'Dolap', baslik: 'Dolabını tasarla', alt: 'Gardırop, sürgülü dolap, raf sistemi · 40–400 cm' },
+  { tur: 'komodin', ad: 'Komodin', baslik: 'Komodinini tasarla', alt: 'Yatak başı komodin, şifonyer, konsol · 35–200 cm' },
+  { tur: 'masa', ad: 'Masa', baslik: 'Masanı tasarla', alt: 'Yemek, çalışma masası, orta ve yan sehpa' },
+];
+const tasarlaGorsel = t => `gorseller/tasarla-${t.tur}.jpg`;
+const tasarlaKartHtml = t => `<a class="tasarla-kart" href="#tasarla-${t.tur}">
+  <img src="${tasarlaGorsel(t)}" alt="" loading="lazy"><b>${t.baslik}</b><span>${t.alt}</span><span class="git">Tasarlamaya başla →</span></a>`;
+for (const id of ['megaKartlar', 'bantKartlar', 'sayfaKartlar']) $(id).innerHTML = TASARLA.map(tasarlaKartHtml).join('');
+
 let tasarlaCerceve = null;
-function tasarlaYukle() {
-  if (tasarlaCerceve) return;
-  tasarlaCerceve = document.createElement('iframe');
-  tasarlaCerceve.src = 'planlayici.html?mod=tasarla';
-  tasarlaCerceve.title = 'Ölçüye özel dolap tasarlayıcı';
-  $('tasarlaCerceve').appendChild(tasarlaCerceve);
+function tasarlaYukle(tur) {
+  const src = `planlayici.html?mod=tasarla&tur=${tur}`;
+  if (!tasarlaCerceve) {
+    tasarlaCerceve = document.createElement('iframe');
+    $('tasarlaCerceve').appendChild(tasarlaCerceve);
+  }
+  // Tür değişince tasarlayıcı yeniden açılır; aynı türe dönülürse yarım kalan tasarım korunur
+  if (tasarlaCerceve.dataset.tur !== tur) {
+    tasarlaCerceve.dataset.tur = tur;
+    tasarlaCerceve.src = src;
+  }
+  tasarlaCerceve.title = TASARLA.find(t => t.tur === tur).baslik;
 }
+function tasarlaCiz(tur) {
+  const t = TASARLA.find(x => x.tur === tur);
+  $('tasarlaSecim').hidden = !!t;
+  $('tasarlaAlan').hidden = !t;
+  $('tasarlaBaslik').textContent = t ? t.baslik : 'Ne tasarlamak istersin?';
+  $('tasarlaKirinti').textContent = t ? ` / ${t.ad}` : '';
+  $('tasarlaAciklama').hidden = !!t;
+  if (!t) return;
+  $('tasarlaSekmeler').innerHTML = TASARLA.map(x => `<a class="sekme${x === t ? ' aktif' : ''}" href="#tasarla-${x.tur}"${x === t ? ' aria-current="page"' : ''}>
+    <img src="${tasarlaGorsel(x)}" alt="">${x.ad}</a>`).join('') + '<span style="flex:1"></span><a class="dugme cizgi kucuk" href="#planlayici">3D odama geç</a>';
+  tasarlaYukle(tur);
+}
+
+// Menüdeki "Kendin Tasarla": fareyle üstüne gelince ya da dokununca alt seçenekler (dolap, komodin, masa) açılır
+const megaDugme = $('tasarlaMenu'), mega = $('mega');
+let megaZaman;
+function megaAc(ac) {
+  clearTimeout(megaZaman);
+  mega.hidden = !ac;
+  megaDugme.setAttribute('aria-expanded', ac);
+}
+megaDugme.onclick = () => megaAc(mega.hidden);
+const fareVar = matchMedia('(hover: hover) and (pointer: fine)');
+for (const el of [megaDugme, mega]) {
+  el.addEventListener('mouseenter', () => { if (fareVar.matches) megaAc(true); });
+  el.addEventListener('mouseleave', () => { if (fareVar.matches) megaZaman = setTimeout(() => megaAc(false), 180); });
+}
+mega.addEventListener('click', e => { if (e.target.closest('a')) megaAc(false); });
+addEventListener('pointerdown', e => { if (!mega.hidden && !e.target.closest('#mega, #tasarlaMenu')) megaAc(false); });
+
+// Ana sayfadaki yuvarlak kısayollar
+$('kisayollar').innerHTML = [
+  ...Object.entries({ 'oturma-odasi': 'chester-kanepe', 'yemek-odasi': 'yemek-masasi', depolama: 'kitaplik', dekorasyon: 'saksi-bitki' })
+    .map(([k, id]) => [`#${k}`, KATEGORILER[k], gorsel(urunBul(id)), '']),
+  ...TASARLA.map(t => [`#tasarla-${t.tur}`, `${t.ad} tasarla`, tasarlaGorsel(t), 'ozel']),
+  ['#planlayici', '3D oda planlayıcı', 'gorseller/salon.jpg', 'ozel'],
+  ['#indirim', 'İndirimdekiler', gorsel(urunBul('orta-sehpa')), ''],
+].map(([href, ad, img, tur]) => `<a class="kisayol${tur ? ' ' + tur : ''}" href="${href}"><i><img src="${img}" alt=""${tur ? ' class="dolu"' : ''} loading="lazy"></i>${ad}</a>`).join('');
 addEventListener('message', e => {
   if (!e.data) return;
   if (tasarlaCerceve && e.source === tasarlaCerceve.contentWindow) {
@@ -832,7 +1017,12 @@ function sepeteEkle(id, renk) {
   sepetKaydet();
 }
 // Ölçüye özel dolap: kendi adı, fiyatı ve tasarımıyla saklanır; aynı tasarım ikinci kez eklenirse adedi artar
-const DOLAP_SIMGE = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" stroke="#8a8f8b" stroke-width="2"><rect x="8" y="5" width="24" height="30" rx="1.5"/><path d="M20 5v30M17 18v4M23 18v4"/></svg>');
+const simge = yol => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" stroke="#8a8f8b" stroke-width="2">${yol}</svg>`);
+const OZEL_SIMGE = {
+  dolap: simge('<rect x="8" y="5" width="24" height="30" rx="1.5"/><path d="M20 5v30M17 18v4M23 18v4"/>'),
+  komodin: simge('<rect x="7" y="10" width="26" height="20" rx="1.5"/><path d="M7 20h26M17 15h6M17 25h6M10 30v4M30 30v4"/>'),
+  masa: simge('<path d="M4 15h32M8 15l-2 17M32 15l2 17M12 15l1 10M28 15l-1 10"/>'),
+};
 function ozelSepeteEkle(u) {
   if (!u || !u.ozel || !(u.fiyat > 0)) return;
   const tasarim = JSON.stringify(u.ozel);
@@ -846,7 +1036,7 @@ const kacis = m => String(m).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt
 function satirBilgi(s) {
   if (s.ozel) {
     const gorselOk = /^data:image\/(jpeg|png);base64,/.test(s.gorsel);
-    return { ad: kacis(s.ad), fiyat: s.fiyat, gorsel: gorselOk ? s.gorsel : DOLAP_SIMGE, ozelGorsel: gorselOk, alt: kacis(s.ozellik) };
+    return { ad: kacis(s.ad), fiyat: s.fiyat, gorsel: gorselOk ? s.gorsel : OZEL_SIMGE[s.ozel.tur] || OZEL_SIMGE.dolap, ozelGorsel: gorselOk, alt: kacis(s.ozellik) };
   }
   const u = urunBul(s.id);
   return u && { ad: u.ad, fiyat: u.fiyat, gorsel: gorsel(u), alt: s.renk || '' };
@@ -1030,12 +1220,13 @@ function yonlendir() {
   if (yol === 'koleksiyon' || yol === 'indirim' || KATEGORILER[yol]) { gorunum = 'koleksiyon'; koleksiyonCiz(yol); }
   else if (yol.startsWith('urun-') && urunBul(yol.slice(5))) { gorunum = 'urun'; urunCiz(urunBul(yol.slice(5))); }
   else if (yol === 'planlayici') { gorunum = 'planlayici'; planlayiciYukle(); }
-  else if (yol === 'tasarla') { gorunum = 'tasarla'; tasarlaYukle(); }
+  else if (yol === 'tasarla' || yol.startsWith('tasarla-')) { gorunum = 'tasarla'; tasarlaCiz(yol.slice(8)); }
   else if (yol === 'magazalar') gorunum = 'magazalar';
   if (yol !== 'koleksiyon') { arama = ''; $('aramaKutu').value = ''; }
   aktifYol = yol;
   document.querySelectorAll('[data-gorunum]').forEach(s => s.hidden = s.dataset.gorunum !== gorunum);
-  document.querySelectorAll('nav.menu a').forEach(a => a.classList.toggle('aktif', a.dataset.yol === yol));
+  document.querySelectorAll('nav.menu [data-yol]').forEach(a => a.classList.toggle('aktif', a.dataset.yol === yol.split('-')[0] || a.dataset.yol === yol));
+  megaAc(false);
   scrollTo({ top: 0, behavior: 'instant' });
   montaj.yenile();
 }
