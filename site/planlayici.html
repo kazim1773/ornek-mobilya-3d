@@ -937,7 +937,7 @@ function seciliGuncelle() {
   $('mesafe').innerHTML = '<span style="grid-column:1/-1">Duvarlara uzaklık</span>' +
     m('Sol duvar', x - hx + oda.W / 2) + m('Sağ duvar', oda.W / 2 - x - hx) +
     m('Arka duvar', z - hz + oda.L / 2) + m('Ön duvar', oda.L / 2 - z - hz);
-  etiket.textContent = `${it.def.ad} · ${cm(it.def.g)}×${cm(it.def.d)} cm${it.kapaklar ? ' · içini görmek için dokun' : ''}`;
+  etiket.textContent = `${it.def.ad} · ${cm(it.def.g)}×${cm(it.def.d)} cm${it.kapaklar ? ' · dokun: içini gör' : ''}`;
 }
 
 // Özel tasarımın kapak ve çekmeceleri: dokununca açılır, tekrar dokununca kapanır (çizim döngüsünde yumuşakça)
@@ -1103,6 +1103,7 @@ async function aoKur() {
     c.addPass(new OutputPass());
     c.setSize(sahneEl.clientWidth, sahneEl.clientHeight);
     composer = c;
+    tazele();
   } catch (e) {
     console.warn('Köşe gölgeleri açılamadı:', e);
   }
@@ -1215,6 +1216,7 @@ function inceleAc(it) {
 function inceleKapat() {
   $('incele').hidden = true;
   inc.r?.setAnimationLoop(null);
+  tazele();
   renderer.setAnimationLoop(ciz);
 }
 
@@ -1306,6 +1308,7 @@ async function fotografCek() {
   $('fotoResim').hidden = $('fotoNot').hidden = $('fotoKapat').hidden = false;
   $('fotoBitir').hidden = $('fotoCubuk').hidden = true;
   $('fotoDurum').textContent = not + 'Fotoğrafınız hazır.';
+  tazele();
   renderer.setAnimationLoop(ciz);
   return url;
 }
@@ -1601,15 +1604,16 @@ function dolapYap(k, secimli) {
       const parcalar = sag - sol > 0.62 ? [[sol, orta, -1], [orta, sag, 1]] : [[sol, sag, i % 2 ? 1 : -1]];
       for (const [a, c, mentese] of parcalar) {
         const kw = c - a - 0.003;
+        // Menteşe kapağın ön köşesinde: aynı ara dikmede buluşan iki kapak 90° açılınca yan yana durur, iç içe geçmez
         const pivot = new THREE.Group();
-        pivot.position.set(mentese < 0 ? a + 0.0015 : c - 0.0015, ky, kz);
-        levha(pivot, on, kw, kh, t, (-mentese * kw) / 2, 0, t / 2);
+        pivot.position.set(mentese < 0 ? a + 0.0015 : c - 0.0015, ky, kz + t);
+        levha(pivot, on, kw, kh, t, (-mentese * kw) / 2, 0, -t / 2);
         sayim.kapakAlan += kw * kh;
         const kx = -mentese * (k.kulp === 'profil' ? kw - 0.007 : kw - 0.045);
-        onKulp(pivot, kx, k.kulp === 'profil' ? 0 : kulpY, t, kh, false);
+        onKulp(pivot, kx, k.kulp === 'profil' ? 0 : kulpY, 0, kh, false);
         kapakGrup.add(pivot);
         // Sol menteşeli kapak -y yönünde, sağ menteşeli +y yönünde döner; ikisi de öne doğru açılır
-        kapaklar.push(acik => { pivot.rotation.y = mentese * acik * 1.75; });
+        kapaklar.push(acik => { pivot.rotation.y = mentese * acik * Math.PI / 2; });
       }
     });
   } else if (surgu) {
@@ -1875,13 +1879,14 @@ function komodinYap(k, secimli) {
         sayim.kulp++;
         // Komşu kolonlar ortadan açılsın diye menteşe yönü sırayla değişir
         const mentese = i % 2 ? 1 : -1;
+        // Menteşe kapağın ön köşesinde: 90° açılınca kapak kendi kolonunun kenarında durur, komşu çekmecelere girmez
         const pivot = new THREE.Group();
-        pivot.position.set(mentese < 0 ? sol + 0.0015 : sag - 0.0015, y0 + h / 2, fz);
-        levha(pivot, on, ow, h - 0.003, t, (-mentese * ow) / 2, 0, t / 2);
+        pivot.position.set(mentese < 0 ? sol + 0.0015 : sag - 0.0015, y0 + h / 2, fz + t);
+        levha(pivot, on, ow, h - 0.003, t, (-mentese * ow) / 2, 0, -t / 2);
         sayim.onAlan += ow * h;
-        kulpEkle(pivot, k.kulp, kulpMat, -mentese * (k.kulp === 'profil' ? ow - 0.007 : ow - 0.04), h > 0.3 ? h / 2 - 0.07 : 0, t, Math.min(0.2, h * 0.6), false);
+        kulpEkle(pivot, k.kulp, kulpMat, -mentese * (k.kulp === 'profil' ? ow - 0.007 : ow - 0.04), h > 0.3 ? h / 2 - 0.07 : 0, 0, Math.min(0.2, h * 0.6), false);
         kapakGrup.add(pivot);
-        kapaklar.push(a => { pivot.rotation.y = mentese * a * 1.75; });
+        kapaklar.push(a => { pivot.rotation.y = mentese * a * Math.PI / 2; });
         if (ic1 - ic0 > 0.3) raf(b, (ic0 + ic1) / 2);
       } else if (ic1 - ic0 > 0.36) raf(b, (ic0 + ic1) / 2);
       // Açık bölüm ya da kapak bir sonraki dilimden ara rafla ayrılır
@@ -2526,6 +2531,7 @@ function konfBoyut() {
   konf.r.setSize(w, h, false);
   konf.kam.aspect = w / h;
   konf.kam.updateProjectionMatrix();
+  tazele();
 }
 
 function kameraGorus(g, hemen = false) {
@@ -2755,18 +2761,30 @@ function olcuDegisti(inp, bitti) {
   if (bitti) adimCiz();
 }
 
+// Sahneler yalnızca bir şey değişirken çizilir. Boşta saniyede 60 kare gölgeli çizim, dizüstü ve telefonlarda
+// ekran kartını sürekli meşgul edip sayfayı donduruyordu. Her kullanıcı hareketi birkaç kare çizim hakkı verir;
+// kamera yavaşlaması, kapak ve kamera animasyonları sürdükçe çizim devam eder.
+let cizilecek = 60;
+const tazele = (kare = 30) => { cizilecek = Math.max(cizilecek, kare); };
+for (const tur of ['pointerdown', 'pointerup', 'wheel', 'keydown', 'input', 'change', 'click', 'message']) addEventListener(tur, () => tazele(), { capture: true, passive: true });
+addEventListener('pointermove', e => { if (e.buttons) tazele(); }, { capture: true, passive: true });
+
 function konfCiz() {
   const hedef = kapakHedef();
   if (konf.kapakT !== hedef) {
     konf.kapakT = azHareket.matches || Math.abs(hedef - konf.kapakT) < 0.002 ? hedef : konf.kapakT + (hedef - konf.kapakT) * 0.14;
     kapaklariUygula();
+    tazele(2);
   }
   if (konf.kamHedef) {
     konf.kam.position.lerp(konf.kamHedef.p, 0.14);
     konf.kontrol.target.lerp(konf.kamHedef.t, 0.14);
     if (konf.kam.position.distanceTo(konf.kamHedef.p) < 0.002) konf.kamHedef = null;
+    tazele(2);
   }
-  konf.kontrol.update();
+  if (konf.kontrol.update()) tazele(2);
+  if (cizilecek <= 0) return;
+  cizilecek--;
   konf.r.render(konf.sc, konf.kam);
   const kap = $('konfSahne'), etiketler = $('olcuEtiketleri').children;
   konf.olcuNoktalari.forEach(([p, metin], i) => {
@@ -2802,6 +2820,7 @@ function konfAc(k, duzenlenen = null, tur = 'dolap') {
   dolapYenile();
   adimaGit(0);
   kameraGorus('3d', true);
+  tazele();
   konf.r.setAnimationLoop(konfCiz);
   if (taslak) uyar('Kaydettiğiniz taslak yüklendi', 'bilgi');
   // Sitenin içindeki sekmede odak verilmez: tarayıcı sayfayı çerçevenin altına kaydırıyordu
@@ -2811,6 +2830,7 @@ function konfAc(k, duzenlenen = null, tur = 'dolap') {
 function konfKapat() {
   $('konf').hidden = true;
   konf.r?.setAnimationLoop(null);
+  tazele();
   renderer.setAnimationLoop(ciz);
 }
 
@@ -2856,7 +2876,13 @@ $('konfPanel').addEventListener('click', ev => {
   const b = ev.target.closest('[data-ayar]');
   if (b && !b.disabled) ayarla(b.dataset.ayar, b.dataset.deger);
 });
-$('konfPanel').addEventListener('input', ev => { if (ev.target.type === 'range' && ev.target.dataset.olcu) olcuDegisti(ev.target, false); });
+// Kaydırıcı sürüklenirken mobilya karede en fazla bir kez yeniden üretilir
+let olcuKaresi = 0, olcuGirdisi = null;
+$('konfPanel').addEventListener('input', ev => {
+  if (ev.target.type !== 'range' || !ev.target.dataset.olcu) return;
+  olcuGirdisi = ev.target;
+  olcuKaresi ||= requestAnimationFrame(() => { olcuKaresi = 0; olcuDegisti(olcuGirdisi, false); });
+});
 $('konfPanel').addEventListener('change', ev => { if (ev.target.dataset.olcu) olcuDegisti(ev.target, true); });
 $('konfGeri').onclick = () => adimaGit(konf.adim - 1);
 $('konfIleri').onclick = () => adimaGit(konf.adim + 1);
@@ -3032,17 +3058,21 @@ new ResizeObserver(() => {
   composer?.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  tazele();
 }).observe(sahneEl);
 
 const v = new THREE.Vector3();
 function ciz() {
-  controls.update();
+  if (controls.update()) tazele(2);
   for (const it of esyalar) {
     if (!it.kapaklar || it.acik === it.acikHedef) continue;
     const fark = it.acikHedef - it.acik;
     it.acik = azHareket.matches || Math.abs(fark) < 0.002 ? it.acikHedef : it.acik + fark * 0.12;
     it.kapaklar.forEach(f => f(it.acik));
+    tazele(2);
   }
+  if (cizilecek <= 0) return;
+  cizilecek--;
   // Kameranın önünde kalan duvarları gizle ki oda içi görünsün
   for (const d of duvarlar) {
     const [ix, iz] = d.userData.ic, [nx, nz] = d.userData.n;
@@ -3077,6 +3107,7 @@ else {
   onizlemeleriCiz([...ozelKartlar, ...hazir]);
   katalogCiz(hazir, ozelKartlar);
   $('yukleniyor').hidden = true;
+  tazele(60);
 
   // Örnek salon düzeni; yeri doluysa ürün en yakın boş yere konur
   function yerlestir(ad, x, z, rot = 0) {
