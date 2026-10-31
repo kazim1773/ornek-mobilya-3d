@@ -18,6 +18,8 @@ SAYFALAR = [
     ('tasarla', '#tasarla', None),
     ('tasarla-komodin', '#tasarla-komodin', None),
     ('tasarla-masa', '#tasarla-masa', None),
+    ('tasarla-yatak', '#tasarla-yatak', None),
+    ('tasarla-tezgah', '#tasarla-tezgah', None),
     ('koleksiyon', '#koleksiyon', None),
 ]
 
