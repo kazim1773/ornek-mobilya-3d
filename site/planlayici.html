@@ -146,7 +146,7 @@
   .incele-alt { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; padding: 12px; }
   .incele-ipucu { text-align: center; font-size: 12px; color: var(--muted); padding: 0 12px 12px; }
 
-  /* Fotoğraf: gerçekçi ışık hesabıyla çekilen görüntü */
+  /* Fotoğraf: ekrandaki oda görüntüsü, seçim çerçevesi olmadan */
   #foto { position: absolute; inset: 0; z-index: 15; display: grid; place-items: center; background: var(--veil); padding: 16px; }
   .foto-kutu { background: var(--panel); border-radius: 12px; padding: 14px; max-width: 100%; max-height: 100%; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
   .foto-kutu img { display: block; max-width: 100%; max-height: calc(100vh - 220px); border-radius: 8px; }
@@ -272,9 +272,7 @@
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/",
-  "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/",
-  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.8/build/index.module.js",
-  "three-gpu-pathtracer": "https://cdn.jsdelivr.net/npm/three-gpu-pathtracer@0.0.23/build/index.module.js"
+  "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
 } }
 </script>
 </head>
@@ -372,13 +370,11 @@
 
   <div id="foto" hidden>
     <div class="foto-kutu">
-      <p id="fotoDurum">Hazırlanıyor…</p>
-      <div class="cubuk" id="fotoCubuk"><div class="dolu" id="fotoDolu"></div></div>
-      <img id="fotoResim" alt="Odanın gerçekçi fotoğrafı" hidden>
-      <p id="fotoNot" hidden>Kaydetmek için görsele sağ tıklayın ya da telefonda basılı tutun.</p>
+      <p id="fotoDurum">Fotoğrafınız hazır.</p>
+      <img id="fotoResim" alt="Odanın fotoğrafı">
+      <p id="fotoNot">Kaydetmek için görsele sağ tıklayın ya da telefonda basılı tutun.</p>
       <div class="butonlar">
-        <button class="btn" id="fotoBitir">Şimdi bitir</button>
-        <button class="btn" id="fotoKapat" hidden>Kapat</button>
+        <button class="btn" id="fotoKapat">Kapat</button>
       </div>
     </div>
   </div>
@@ -1276,82 +1272,18 @@ $('inceleAc').onclick = () => secili && inceleAc(secili);
 $('inceleKapat').onclick = inceleKapat;
 
 // ---------- Fotoğraf çek: ışığı gerçekten hesaplayan (path tracing) yüksek kaliteli görüntü ----------
-const FOTO_ORNEK = 120;
-let fotoBitir = false;
-
-// Path tracer için basit bir gökyüzü: üstte parlak beyaz, altta sıcak toprak tonu
-function gokDokusu() {
-  const w = 128, h = 64, veri = new Float32Array(w * h * 4);
-  for (let y = 0; y < h; y++) {
-    const t = y / (h - 1);
-    const ust = t > 0.5 ? (t - 0.5) * 2 : 0, alt = t < 0.5 ? (0.5 - t) * 2 : 0;
-    const r = 1.0 + ust * 0.6 - alt * 0.6, g = 1.0 + ust * 0.65 - alt * 0.65, b = 1.05 + ust * 0.8 - alt * 0.75;
-    for (let x = 0; x < w; x++) veri.set([r, g, b, 1], (y * w + x) * 4);
-  }
-  const tex = new THREE.DataTexture(veri, w, h, THREE.RGBAFormat, THREE.FloatType);
-  tex.mapping = THREE.EquirectangularReflectionMapping;
-  tex.needsUpdate = true;
-  return tex;
-}
-
+// Fotoğraf: ekrandaki görüntü beklemeden alınır (seçim çerçevesi ve halka gizlenir).
+// Görüntü çizimle aynı karede okunmalı, yoksa tuval temizlenmiş olur.
 async function fotografCek() {
   sec(null);
-  fotoBitir = false;
-  $('foto').hidden = false;
-  $('fotoResim').hidden = $('fotoNot').hidden = $('fotoKapat').hidden = true;
-  $('fotoBitir').hidden = $('fotoCubuk').hidden = false;
-  $('fotoDolu').style.width = '0%';
-  $('fotoDurum').textContent = 'Işık hesabı hazırlanıyor…';
-  renderer.setAnimationLoop(null);
-
-  let url, not = '', pt;
-  const eskiOrtam = scene.environment;
-  try {
-    const { WebGLPathTracer } = await import('three-gpu-pathtracer');
-    scene.environment = gokDokusu();
-    pt = new WebGLPathTracer(renderer);
-    pt.tiles.set(2, 2);
-    pt.filterGlossyFactor = 0.5;
-    pt.setScene(scene, camera);
-    url = await new Promise(coz => {
-      const adim = () => {
-        pt.renderSample();
-        const n = Math.floor(pt.samples);
-        $('fotoDurum').textContent = `Işık hesaplanıyor… ${n} / ${FOTO_ORNEK}`;
-        $('fotoDolu').style.width = Math.min(100, (n / FOTO_ORNEK) * 100) + '%';
-        // Görüntü aynı karede alınmalı, yoksa tuval temizlenir
-        if (n >= FOTO_ORNEK || fotoBitir) return coz(canvas.toDataURL('image/jpeg', 0.92));
-        requestAnimationFrame(adim);
-      };
-      adim();
-    });
-  } catch (hata) {
-    console.warn('Gerçekçi fotoğraf motoru açılamadı:', hata);
-  } finally {
-    // Motorun kapanırken verdiği hatalar fotoğrafı etkilemesin
-    try { pt?.dispose(); } catch (hata) { console.warn('Fotoğraf motoru kapatılırken:', hata); }
-    if (scene.environment !== eskiOrtam) {
-      scene.environment.dispose();
-      scene.environment = eskiOrtam;
-    }
-  }
-  if (!url) {
-    // Yedek: normal görüntüyü al
-    if (composer) composer.render(); else renderer.render(scene, camera);
-    url = canvas.toDataURL('image/jpeg', 0.92);
-    not = 'Gerçekçi ışık hesabı bu cihazda açılamadı, normal görüntü alındı. ';
-  }
-
+  if (composer) composer.render(); else renderer.render(scene, camera);
+  const url = canvas.toDataURL('image/jpeg', 0.92);
   $('fotoResim').src = url;
-  $('fotoResim').hidden = $('fotoNot').hidden = $('fotoKapat').hidden = false;
-  $('fotoBitir').hidden = $('fotoCubuk').hidden = true;
-  $('fotoDurum').textContent = not + 'Fotoğrafınız hazır.';
+  $('foto').hidden = false;
   tazele();
-  renderer.setAnimationLoop(ciz);
   return url;
 }
 $('fotoCek').onclick = fotografCek;
-$('fotoBitir').onclick = () => { fotoBitir = true; };
 $('fotoKapat').onclick = () => { $('foto').hidden = true; };
 
 // ---------- Kendin tasarla: ölçüye özel dolap konfigüratörü ----------
