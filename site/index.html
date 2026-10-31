@@ -114,7 +114,8 @@
   .mega .giris { display: grid; gap: 10px; align-content: start; }
   .mega .giris p { color: var(--muted); font-size: 14px; }
   .mega .giris .dugme { justify-self: start; margin-top: 6px; }
-  .tasarla-kartlar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+  .tasarla-kartlar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .mega .tasarla-kart span:not(.git) { display: none; }
   .tasarla-kart {
     display: grid; gap: 6px; align-content: start; padding: 10px 10px 16px; border: 1px solid var(--line); border-radius: 18px;
     background: var(--surface); text-decoration: none; transition: border-color .2s, transform .2s, box-shadow .2s;
@@ -351,7 +352,7 @@
   @media (max-width: 980px) {
     .kampanyalar, .mega .kap { grid-template-columns: minmax(0, 1fr); }
     .mega .giris { display: none; }
-    .tasarla-kartlar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .tasarla-kartlar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .kahraman, .bant .kap, .urun, .showroom { grid-template-columns: minmax(0, 1fr); }
     .kahraman { gap: 28px; padding-block: 32px; }
     .hizmetler, .alanlar, .izgara { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -371,9 +372,11 @@
     nav.menu a::after, nav.menu .menu-ac::after { left: 11px; right: 11px; }
     nav.menu a.planlayici-link { margin-left: 4px; padding: 6px 14px; }
     .mega .kap { padding-block: 14px 16px; }
-    .mega .tasarla-kartlar { gap: 8px; }
-    .mega .tasarla-kart { padding: 6px 6px 10px; border-radius: 14px; }
-    .mega .tasarla-kart b { font-size: 0.95rem; }
+    /* Telefonda açılır menü: küçük görselli iki sütunlu liste */
+    .mega .tasarla-kartlar { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .mega .tasarla-kart { grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 0 10px; padding: 6px; border-radius: 12px; }
+    .mega .tasarla-kart img { width: 46px; height: 46px; aspect-ratio: auto; margin: 0; border-radius: 8px; }
+    .mega .tasarla-kart b { padding: 0; font-size: 0.9rem; line-height: 1.2; }
     .mega .tasarla-kart span { display: none; }
     .tasarla-bant .kap { padding-block: 40px; }
     .tasarla-bant .tasarla-kartlar, .tasarla-secim .tasarla-kartlar { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -494,7 +497,7 @@
           <div>
             <span class="etiket">Yeni · Ölçüye özel üretim</span>
             <h2 style="margin-top:10px">Kendin tasarla, biz üretelim.</h2>
-            <p>Dolabını, komodinini, masanı, yatağını ya da mutfak tezgahını santimine kadar kendi ölçüne göre tasarla. Her seçimde 3D görünüm ve fiyat anında güncellenir; beğendiğin tasarımı odanda dene.</p>
+            <p>Dolabını, çatı katı dolabını, TV ünitesini, yatağını ya da mutfak ve banyo tezgahını santimine kadar kendi ölçüne göre tasarla. Her seçimde 3D görünüm ve fiyat anında güncellenir; beğendiğin tasarımı odanda dene.</p>
           </div>
           <div class="adim-rozet"><span><b>1</b>Ölçünü gir</span><span><b>2</b>Malzeme ve rengini seç</span><span><b>3</b>Odanda dene</span></div>
         </div>
@@ -928,10 +931,13 @@ function planlayiciyaGonder(mesaj, git) {
 // Aynı planlayıcı sayfası yalnızca seçilen türün tasarlayıcısıyla açılır (oda ve 3D modeller yüklenmez)
 const TASARLA = [
   { tur: 'dolap', ad: 'Dolap', baslik: 'Dolabını tasarla', alt: 'Gardırop, sürgülü dolap, raf sistemi · 40–400 cm' },
+  { tur: 'egimli', ad: 'Eğimli dolap', baslik: 'Eğimli dolabını tasarla', alt: 'Çatı katı ve dizlik duvarına göre kesilmiş dolap' },
   { tur: 'komodin', ad: 'Komodin', baslik: 'Komodinini tasarla', alt: 'Yatak başı komodin, şifonyer, konsol · 35–200 cm' },
+  { tur: 'tv', ad: 'TV ünitesi', baslik: 'TV üniteni tasarla', alt: 'Asılı ya da ayaklı ünite, duvar paneli ve raflar' },
   { tur: 'masa', ad: 'Masa', baslik: 'Masanı tasarla', alt: 'Yemek, çalışma masası, orta ve yan sehpa' },
   { tur: 'yatak', ad: 'Yatak', baslik: 'Yatağını tasarla', alt: 'Karyola ve bazalı set, başlık ve kumaş seçimi' },
-  { tur: 'tezgah', ad: 'Tezgah', baslik: 'Tezgahını tasarla', alt: 'Mutfak tezgahı (düz, L, ada) ve banyo lavabo dolabı' },
+  { tur: 'mutfak', ad: 'Mutfak tezgahı', baslik: 'Mutfak tezgahını tasarla', alt: 'Düz, L ya da ada; eviye, ocak ve fırın isteğe bağlı' },
+  { tur: 'banyo', ad: 'Banyo tezgahı', baslik: 'Banyo tezgahını tasarla', alt: 'Lavabolu dolap, tek ya da çift lavabo, ayna' },
 ];
 const tasarlaGorsel = t => `gorseller/tasarla-${t.tur}.jpg`;
 const tasarlaKartHtml = t => `<a class="tasarla-kart" href="#tasarla-${t.tur}">
@@ -1036,7 +1042,10 @@ const OZEL_SIMGE = {
   komodin: simge('<rect x="7" y="10" width="26" height="20" rx="1.5"/><path d="M7 20h26M17 15h6M17 25h6M10 30v4M30 30v4"/>'),
   masa: simge('<path d="M4 15h32M8 15l-2 17M32 15l2 17M12 15l1 10M28 15l-1 10"/>'),
   yatak: simge('<path d="M5 30V9M5 22h30v8M5 17h30v5M35 30v-8M9 17v-4h8v4"/>'),
-  tezgah: simge('<path d="M4 13h32M6 13v20h28V13M20 13v20M16 21v4M24 21v4M13 13V8h6"/>'),
+  mutfak: simge('<path d="M4 13h32M6 13v20h28V13M20 13v20M16 21v4M24 21v4M13 13V8h6"/>'),
+  banyo: simge('<path d="M5 17h30M7 17v12h26V17M14 17a6 3 0 0 0 12 0M20 10v4M12 4h16v6H12z"/>'),
+  tv: simge('<path d="M8 6h24v15H8zM4 26h32v7H4zM20 26v7"/>'),
+  egimli: simge('<path d="M5 34V20L19 6h16v28zM19 6v28"/>'),
 };
 function ozelSepeteEkle(u) {
   if (!u || !u.ozel || !(u.fiyat > 0)) return;
