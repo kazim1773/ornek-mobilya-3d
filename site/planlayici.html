@@ -5,55 +5,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Oda Planlayıcı</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
   /* Yerleşim: solda ürün/oda paneli, sağda tam yükseklikte 3D sahne; dar ekranda sahne üstte, panel altta */
   :root {
-    --bg: #f3f4f2;
-    --panel: #ffffff;
-    --field: #ffffff;
-    --ink: #1d2421;
-    --muted: #6b746f;
-    --line: #dfe3e0;
-    --accent: #1f6f5c;
-    --accent-soft: #e3f0ec;
+    --bg: #f6f1ea;
+    --panel: #fffdf9;
+    --field: #fffdf9;
+    --ink: #2b2420;
+    --muted: #77695e;
+    --line: #e3d8ca;
+    --accent: #7d5234;
+    --accent-soft: #f1e4d6;
     --danger: #b42318;
     --toast-bg: #7a1f16;
     --toast-fg: #ffffff;
-    --tag-bg: #1d2421;
+    --tag-bg: #2b2420;
     --tag-fg: #ffffff;
-    --scene: #e7eae8;
-    --thumb: #eef0ee;
-    --veil: rgba(20, 24, 22, 0.55);
+    --scene: #ece5dc;
+    --thumb: #f1ebe2;
+    --veil: rgba(30, 22, 16, 0.55);
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #151917; --panel: #1c211f; --field: #232927; --ink: #e8ece9; --muted: #9aa59f;
-      --line: #2f3633; --accent: #5cbfa2; --accent-soft: #1f3530; --danger: #f07167;
-      --toast-bg: #8f2a20; --toast-fg: #ffffff; --tag-bg: #e8ece9; --tag-fg: #151917; --scene: #2a302d;
-      --thumb: #2a302d; --veil: rgba(0, 0, 0, 0.6);
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #151917; --panel: #1c211f; --field: #232927; --ink: #e8ece9; --muted: #9aa59f;
-    --line: #2f3633; --accent: #5cbfa2; --accent-soft: #1f3530; --danger: #f07167;
-    --toast-bg: #8f2a20; --toast-fg: #ffffff; --tag-bg: #e8ece9; --tag-fg: #151917; --scene: #2a302d;
-    --thumb: #2a302d; --veil: rgba(0, 0, 0, 0.6);
-    color-scheme: dark;
-  }
+  :root { color-scheme: light; }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; height: 100%; }
   body {
     display: flex; background: var(--bg); color: var(--ink);
-    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: 14px/1.45 "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   aside {
     width: 330px; flex: none; height: 100%; overflow-y: auto;
     background: var(--panel); border-right: 1px solid var(--line);
   }
   header { padding: 18px 20px 14px; border-bottom: 1px solid var(--line); }
-  header .firma { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+  header .firma { font: 600 19px "Playfair Display", Georgia, serif; }
   header .alt { color: var(--muted); font-size: 13px; }
   section { padding: 16px 20px; border-bottom: 1px solid var(--line); }
   h2 { margin: 0 0 10px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
@@ -193,7 +181,7 @@
     font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
   }
   .konf-panel { overflow-y: auto; padding: 18px 20px 24px; background: var(--panel); border-left: 1px solid var(--line); }
-  .konf-panel h3 { margin: 0 0 4px; font-size: 17px; }
+  .konf-panel h3 { margin: 0 0 4px; font: 600 18px/1.2 "Playfair Display", Georgia, serif; }
   .konf-panel h4 { margin: 18px 0 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
   .konf-panel .aciklama { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
   .secenekler { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -272,7 +260,7 @@
     body.tasarla-modu #konf { grid-template-rows: auto minmax(180px, 42%) minmax(0, 1fr) auto; }
     /* Telefonda panel sıkı: başlık, açıklama ve ölçü satırları küçülür ki ölçülerin hepsi bir bakışta görünsün */
     .konf-panel { padding: 10px 16px 16px; }
-    .konf-panel h3 { font-size: 15px; }
+    .konf-panel h3 { font-size: 16px; }
     .konf-panel h4 { margin: 12px 0 6px; }
     .konf-panel .aciklama { margin-bottom: 4px; font-size: 12px; line-height: 1.4; }
     .olcu-kutu { margin-top: 8px; }
