@@ -243,6 +243,22 @@
     .konf-panel { padding: 14px 16px 20px; border-left: 0; border-top: 1px solid var(--line); }
     .konf-alt .fiyat { font-size: 18px; }
   }
+  /* Telefonda mağazanın içinde: tasarlayıcı ekrana sığar; alt çubuk (fiyat, İleri, Sepete ekle, Odamda dene) hep
+     görünür, adım paneli kendi içinde kayar. Sayfayı kaydırmak için 3D sahneye dokunmak gerekmez. */
+  @media (max-width: 760px) {
+    .konf-gorus { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .konf-gorus::-webkit-scrollbar { display: none; }
+    .konf-gorus .btn { flex: none; padding: 6px 10px; font-size: 12px; }
+    .olcu-etiket { padding: 1px 5px; font-size: 10px; }
+    body.tasarla-modu #konf { grid-template-rows: auto minmax(150px, 36%) minmax(0, 1fr) auto; }
+    body.tasarla-modu .konf-ust { padding: 0 8px; }
+    body.tasarla-modu .konf-ust > div:first-child { display: none; }
+    body.tasarla-modu .konf-alt { gap: 6px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
+    body.tasarla-modu .konf-alt .fiyat { flex-basis: 100%; display: flex; align-items: baseline; gap: 8px; }
+    body.tasarla-modu .konf-alt .fiyat small { font-size: 11px; }
+    body.tasarla-modu .konf-alt .ayir, body.tasarla-modu #taslakKaydet { display: none; }
+    body.tasarla-modu .konf-alt .btn { flex: 1 1 auto; padding: 9px 8px; font-size: 13px; }
+  }
   @media (prefers-reduced-motion: reduce) { #uyari, #konfUyari, .cubuk .dolu { transition: none; } }
 </style>
 <script type="importmap">
@@ -852,19 +868,32 @@ function duvarYeriBul(it) {
   return bosYerBul(it);
 }
 
+// Odaya sığan ama boş yer bulunamayan özel tasarım: diğer ürünlere bakmadan önce arka duvara, sonra diğer duvarlara
+// yaslanır. Müşteri tasarımını mutlaka odada görsün; çakışan ürünleri kendisi taşır ya da kaldırır.
+function sigdigiYer(it) {
+  for (const [r, nx, nz] of [[0, 0, -1], [Math.PI * 1.5, 1, 0], [Math.PI, 0, 1], [Math.PI / 2, -1, 0]]) {
+    const [hx, hz] = yariBoy(it, r);
+    if (hx > oda.W / 2 + 1e-6 || hz > oda.L / 2 + 1e-6) continue;
+    return [...sinirla(it, nx * 99, nz * 99, r), r];
+  }
+  return null;
+}
+
 function urunEkle(def) {
   const it = esyaOlustur(def);
-  const yer = def.ozel && duvaraMi(def.ozel) ? duvarYeriBul(it) : bosYerBul(it);
+  let yer = def.ozel && duvaraMi(def.ozel) ? duvarYeriBul(it) : bosYerBul(it), cakisik = false;
+  if (!yer && def.ozel) cakisik = !!(yer = sigdigiYer(it));
   if (!yer) {
     scene.remove(it.grup);
     esyalar.pop();
-    uyar(`${def.ad} için odada yeterli boş alan yok`);
+    uyar(def.ozel ? `${def.ad} bu odanın ölçülerine sığmıyor; oda ölçülerini büyütün` : `${def.ad} için odada yeterli boş alan yok`);
     return false;
   }
   dondurAyarla(it, yer[2]);
   konum(it, yer[0], yer[1]);
   sec(it);
   listeGuncelle();
+  if (cakisik) setTimeout(() => uyar('Odada boş yer yoktu: tasarımınız diğer ürünlerin üstüne yerleşti. Onları sürükleyin ya da kaldırın.', 'bilgi'), 50);
   return true;
 }
 
@@ -984,7 +1013,7 @@ function uyar(metin, tur = 'hata') {
   u.classList.toggle('bilgi', tur === 'bilgi');
   u.classList.add('goster');
   clearTimeout(uyariZaman);
-  uyariZaman = setTimeout(() => u.classList.remove('goster'), 2600);
+  uyariZaman = setTimeout(() => u.classList.remove('goster'), Math.max(2600, metin.length * 60));
 }
 
 // ---------- Fare / dokunmatik ----------
@@ -4414,6 +4443,8 @@ function ayarla(ad, deger) {
   T().duzelt(k);
   dolapYenile(cercevele);
   adimCiz();
+  // Mağazada tasarım her değişiklikte bu cihaza kaydedilir; sekme ya da sayfa değişince yarım kalan tasarım kaybolmaz
+  if (TASARLA_MODU) taslakYaz();
 }
 
 // Ölçü girişi: kaydırıcı sürüklenirken dolap canlı güncellenir, panel yalnızca bırakınca yeniden çizilir
@@ -4426,6 +4457,7 @@ function olcuDegisti(inp, bitti) {
   $('konfPanel').querySelectorAll(`[data-olcu="${a}"]`).forEach(e => { if (e !== inp || bitti) e.value = k[a]; });
   dolapYenile(true);
   if (bitti) adimCiz();
+  if (bitti && TASARLA_MODU) taslakYaz();
 }
 
 // Sahneler yalnızca bir şey değişirken çizilir. Boşta saniyede 60 kare gölgeli çizim, dizüstü ve telefonlarda
@@ -4818,7 +4850,8 @@ else {
     });
 
     addEventListener('message', e => {
-      if (e.source !== site || !e.data) return;
+      // Kaynak pencere yerine adres kökü denetlenir (Safari dokunuşla gelen mesajlarda kaynağı farklı bildirebiliyor)
+      if (!e.data || e.origin !== location.origin) return;
       const { tip, urun, renk } = e.data;
       const def = hazir.find(d => d.ad === urun);
       if (tip === 'ekle' && def) {
