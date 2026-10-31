@@ -38,8 +38,24 @@ with sync_playwright() as p:
             # Tasarlayıcı açılınca alt çubuk kaydırmadan ekranda görünmeli
             sonuc['altGorunur'] = s.evaluate("document.querySelector('#tasarlaCerceve iframe').getBoundingClientRect().bottom <= innerHeight + 1")
             fr = s.frame_locator('#tasarlaCerceve iframe')
-            if tur == TURLER[0] and ad.startswith('safari'):
+            sonuc['tamEkran'] = s.evaluate("document.body.classList.contains('tasarla-tam')")
+            sonuc['olculerKapali'] = fr.locator('#olcuDugme').get_attribute('aria-pressed') == 'false'
+            if tur == TURLER[0]:
                 s.screenshot(path=os.path.join(KLASOR, f'{ad}-{tur}-acilis.png'))
+            # Tam ekran: ikinci adımdayken aç, sahne ekranı kaplamalı; Tasarıma dön ile aynı adıma dönülmeli
+            fr.locator('#konfIleri').tap()
+            sahneH = lambda: fr.locator('#konfSahne').bounding_box()['height']
+            h0 = sahneH()
+            fr.locator('#tamEkran').tap()
+            s.wait_for_timeout(600)
+            h1, ekranH = sahneH(), s.evaluate('innerHeight')
+            if tur == TURLER[0]:
+                s.screenshot(path=os.path.join(KLASOR, f'{ad}-{tur}-tamekran.png'))
+            fr.locator('#tamEkran').tap()
+            s.wait_for_timeout(400)
+            ayniAdim = fr.locator('#adimlar .adim.aktif').get_attribute('data-adim') == '1'
+            sonuc['tamEkranSahne'] = f'{round(h0)}->{round(h1)}' if h1 > ekranH * 0.85 and abs(sahneH() - h0) < 2 and ayniAdim else f'HATA {h0}->{h1} ekran {ekranH} adim {ayniAdim}'
+            fr.locator('#konfGeri').tap()
             # Adımlar: her adımda ilk iki seçeneğe dokun, sonra İleri
             adim = fr.locator('#adimlar .adim').count()
             dokunus = 0
@@ -56,6 +72,12 @@ with sync_playwright() as p:
                     s.wait_for_timeout(250)
             sonuc['sonAdim'] = fr.locator('#adimlar .adim.aktif').count() == 1 and fr.locator('#konfIleri').is_hidden()
             sonuc['dokunus'] = dokunus
+            # Kapat listeye döner, aynı karta yeniden dokununca tasarım kaldığı yerden açılır
+            fr.locator('#konfKapat').tap()
+            s.wait_for_timeout(600)
+            sonuc['kapat'] = s.evaluate("location.hash === '#tasarla' && !document.body.classList.contains('tasarla-tam')")
+            s.locator(f'#sayfaKartlar a[href="#tasarla-{tur}"]').tap()
+            s.wait_for_timeout(1500)
             # Sepete ekle
             once = int(s.text_content('#sepetSayac') or 0)
             fr.locator('#konfSepet').scroll_into_view_if_needed()

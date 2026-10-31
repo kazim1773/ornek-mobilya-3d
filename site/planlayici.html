@@ -180,6 +180,10 @@
   #konfSahne canvas { display: block; width: 100%; height: 100%; touch-action: none; }
   .konf-gorus { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
   .konf-gorus .btn { pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  /* Tam ekran: tasarım sürerken 3D sahne tek başına ekranı kaplar; panel ve fiyat çubuğu gizlenir, seçimler korunur */
+  html body.sahne-tam #konf { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  html body.sahne-tam .konf-ust, html body.sahne-tam .konf-panel, html body.sahne-tam .konf-alt { display: none; }
+  body.sahne-tam #tamEkran { background: var(--ink); border-color: var(--ink); color: var(--panel); }
   .olcu-etiket {
     position: absolute; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap;
     padding: 2px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink);
@@ -250,9 +254,12 @@
     .konf-gorus::-webkit-scrollbar { display: none; }
     .konf-gorus .btn { flex: none; padding: 6px 10px; font-size: 12px; }
     .olcu-etiket { padding: 1px 5px; font-size: 10px; }
-    body.tasarla-modu #konf { grid-template-rows: auto minmax(150px, 36%) minmax(0, 1fr) auto; }
-    body.tasarla-modu .konf-ust { padding: 0 8px; }
+    body.tasarla-modu .konf-ust { flex-wrap: nowrap; padding: 0 8px 0 0; gap: 6px; }
+    body.tasarla-modu #konfKapat { flex: none; padding: 6px 10px; font-size: 13px; }
+    #tamEkran { order: -1; }
     body.tasarla-modu .konf-ust > div:first-child { display: none; }
+    body.tasarla-modu .adimlar { order: 0; flex: 1; flex-basis: auto; }
+    body.tasarla-modu #konf { grid-template-rows: auto minmax(190px, 46%) minmax(0, 1fr) auto; }
     body.tasarla-modu .konf-alt { gap: 6px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
     body.tasarla-modu .konf-alt .fiyat { flex-basis: 100%; display: flex; align-items: baseline; gap: 8px; }
     body.tasarla-modu .konf-alt .fiyat small { font-size: 11px; }
@@ -392,6 +399,7 @@
       <button class="btn" data-gorus="ust">Üstten</button>
       <button class="btn" id="kapakDugme">İçini göster</button>
       <button class="btn aktif" id="olcuDugme" aria-pressed="true">Ölçüler</button>
+      <button class="btn" id="tamEkran" aria-pressed="false">Tam ekran</button>
     </div>
     <div id="olcuEtiketleri"></div>
     <div id="konfUyari"></div>
@@ -1376,10 +1384,21 @@ const DEKORLAR = [
   { id: 'adacayi', ad: 'Adaçayı', renk: '#a3b09c', katsayi: 1.05 },
   { id: 'gece', ad: 'Gece mavisi', renk: '#2f3d52', katsayi: 1.05 },
   { id: 'antrasit', ad: 'Antrasit', renk: '#3a3d41', katsayi: 1.05 },
+  { id: 'kum', ad: 'Kum beji', renk: '#cbb79a', katsayi: 1 },
+  { id: 'tas', ad: 'Taş grisi', renk: '#9b9a95', katsayi: 1 },
+  { id: 'kil', ad: 'Kil pembesi', renk: '#c69c8f', katsayi: 1.05 },
+  { id: 'terra', ad: 'Terrakota', renk: '#b4654a', katsayi: 1.05 },
+  { id: 'zeytin', ad: 'Zeytin yeşili', renk: '#6d6e4c', katsayi: 1.05 },
+  { id: 'petrol', ad: 'Petrol mavisi', renk: '#2e5560', katsayi: 1.05 },
+  { id: 'bordo', ad: 'Bordo', renk: '#6b2f37', katsayi: 1.05 },
+  { id: 'siyah', ad: 'Mat siyah', renk: '#262628', katsayi: 1.05 },
+  { id: 'kayin', ad: 'Açık kayın', renk: '#d8bf98', ahsap: true, katsayi: 1.15 },
   { id: 'akcaagac', ad: 'Akçaağaç', renk: '#e0c49b', ahsap: true, katsayi: 1.15 },
   { id: 'mese', ad: 'Doğal meşe', renk: '#c39a68', ahsap: true, katsayi: 1.2 },
   { id: 'fume', ad: 'Füme meşe', renk: '#6a5a4c', ahsap: true, katsayi: 1.25 },
   { id: 'ceviz', ad: 'Ceviz', renk: '#7a5034', ahsap: true, katsayi: 1.3 },
+  { id: 'tik', ad: 'Tik', renk: '#9c6a3f', ahsap: true, katsayi: 1.25 },
+  { id: 'wenge', ad: 'Wenge', renk: '#4a3528', ahsap: true, katsayi: 1.3 },
   { id: 'ayna', ad: 'Ayna', renk: '#cfd8dc', ayna: true, katsayi: 1.6, sadeceKapak: true },
 ];
 const KULPLAR = [
@@ -1392,12 +1411,14 @@ const KULP_RENKLERI = [
   { id: 'krom', ad: 'Krom', renk: '#c9ccd0', metal: 0.9 },
   { id: 'siyah', ad: 'Mat siyah', renk: '#232323', metal: 0.3 },
   { id: 'pirinc', ad: 'Fırçalı pirinç', renk: '#b8955a', metal: 0.85 },
+  { id: 'bronz', ad: 'Antik bronz', renk: '#6e5238', metal: 0.8 },
+  { id: 'beyazk', ad: 'Mat beyaz', renk: '#ecebe7', metal: 0.1 },
 ];
 // ₺; gövde ve kapak m² başına, ray ve baza metre başına, diğerleri adet başına
 const BIRIM_FIYAT = { govde: 650, kapak: 900, raf: 240, aski: 320, cekmece: 1450, ray: 950, baza: 380, led: 690, montaj: 1500 };
 const VARSAYILAN_DOLAP = {
   tur: 'dolap', W: 240, H: 220, D: 60, hat: 'premium', bolme: 4, ic: ['askiRaf', 'cekmece', 'raf', 'aski'],
-  kapak: 'mentese', surguSayi: 2, govdeDekor: 'beyaz', kapakDekor: 'mese', kulp: 'cubuk', kulpRenk: 'siyah', baza: true, led: false,
+  kapak: 'mentese', surguSayi: 2, govdeDekor: 'mese', kapakDekor: 'gece', kulp: 'cubuk', kulpRenk: 'pirinc', baza: true, led: false,
 };
 const TASLAK_ANAHTAR = 'oda-planlayici:dolap-taslagi';
 const TASARLA_MODU = new URLSearchParams(location.search).get('mod') === 'tasarla';
@@ -1799,7 +1820,7 @@ const KOMODIN_HAZIR = [
 const KOMODIN_FIYAT = { govde: 650, on: 900, raf: 240, cekmece: 950, sessiz: 380, baza: 380, ayna: 2400, montaj: 600 };
 const VARSAYILAN_KOMODIN = {
   tur: 'komodin', W: 50, H: 55, D: 40, hat: 'premium', kolon: 1, on: ['c2'], ayak: 'ahsap',
-  govdeDekor: 'beyaz', onDekor: 'mese', kulp: 'dugme', kulpRenk: 'pirinc', sessiz: true, ayna: false,
+  govdeDekor: 'mese', onDekor: 'zeytin', kulp: 'dugme', kulpRenk: 'pirinc', sessiz: true, ayna: false,
 };
 const AYNA_MIN_W = 70, AYNA_MAX_H = 100;
 
@@ -2072,6 +2093,8 @@ const TABLALAR = [
   { id: 'traverten', ad: 'Traverten', renk: '#d8c6a6', damar: '#ad9670', katsayi: 2 },
   { id: 'kuvars', ad: 'Beyaz kuvars', renk: '#eeece7', damar: '#d2cdc4', katsayi: 2.1 },
   { id: 'beton', ad: 'Beton gri', renk: '#9c9a95', damar: '#7c7a76', katsayi: 1.8 },
+  { id: 'calacatta', ad: 'Calacatta', renk: '#f1ede6', damar: '#b39a6c', katsayi: 2.5 },
+  { id: 'verde', ad: 'Yeşil mermer', renk: '#2f4a3f', damar: '#c9d6cc', katsayi: 2.4 },
   { id: 'cam', ad: 'Füme cam', renk: '#3c4247', cam: true, katsayi: 1.4 },
 ];
 const MASA_AYAKLARI = [
@@ -2087,7 +2110,7 @@ const KENARLAR = [{ id: 'duz', ad: 'Düz kenar' }, { id: 'pah', ad: 'Yumuşak pa
 // ₺; tabla m² başına (4 cm kalınlıkta), alt raf m² başına, diğerleri adet başına
 const MASA_FIYAT = { tabla: 2600, pah: 350, cekmece: 1450, altRaf: 1300, uzatma: 3900, kablo: 260, teslimat: 900, sehpaTeslimat: 400 };
 const VARSAYILAN_MASA = {
-  tur: 'masa', tip: 'yemek', sekil: 'dikdortgen', W: 180, D: 90, H: 75, tabla: 'mese', kalinlik: 4, kenar: 'pah',
+  tur: 'masa', tip: 'yemek', sekil: 'dikdortgen', W: 180, D: 90, H: 75, tabla: 'ceviz', kalinlik: 4, kenar: 'pah',
   ayak: 'dort', ayakRenk: 'siyah', cekmece: 0, altRaf: false, uzatma: false, kablo: false,
 };
 
@@ -2468,6 +2491,12 @@ const KUMASLAR = [
   { id: 'kadife-hardal', ad: 'Hardal kadife', renk: '#b8862c', doku: 'kadife', katsayi: 1.2 },
   { id: 'kadife-lacivert', ad: 'Lacivert kadife', renk: '#28324a', doku: 'kadife', katsayi: 1.2 },
   { id: 'kadife-gul', ad: 'Gül kurusu kadife', renk: '#b98d86', doku: 'kadife', katsayi: 1.2 },
+  { id: 'keten-adacayi', ad: 'Adaçayı keten', renk: '#9fab95', doku: 'keten', katsayi: 1 },
+  { id: 'keten-kiremit', ad: 'Kiremit keten', renk: '#b36b4f', doku: 'keten', katsayi: 1 },
+  { id: 'bukle-gri', ad: 'Gri bukle', renk: '#b9b4ac', doku: 'bukle', katsayi: 1.15 },
+  { id: 'kadife-bej', ad: 'Bej kadife', renk: '#c9b392', doku: 'kadife', katsayi: 1.2 },
+  { id: 'kadife-petrol', ad: 'Petrol kadife', renk: '#25525c', doku: 'kadife', katsayi: 1.2 },
+  { id: 'kadife-bordo', ad: 'Bordo kadife', renk: '#6a2833', doku: 'kadife', katsayi: 1.2 },
 ];
 const SILTE_KUMAS = { id: 'silte', ad: 'Şilte', renk: '#f2f0eb', doku: 'keten' };
 let kumasDokusuTex = null;
@@ -2560,7 +2589,7 @@ const SILTELER = [
 const YATAK_FIYAT = { karyola: 7200, baza: 6400, led: 1300, teslimat: 1200 };
 const VARSAYILAN_YATAK = {
   tur: 'yatak', tip: 'baza', olcu: '160x200', yW: 160, yL: 200, H: 115, baslik: 'kanalli', tasma: 0,
-  kumas: 'bukle', ahsap: 'mese', ayak: 'konik', depo: 'sandik', silte: 'yayli', led: false,
+  kumas: 'kadife-yesil', ahsap: 'mese', ayak: 'konik', depo: 'sandik', silte: 'yayli', led: false,
 };
 const AHSAPLAR = DEKORLAR.filter(d => d.ahsap);
 const yatakBaslikD = k => bul(BASLIKLAR, k.baslik).d;
@@ -2869,7 +2898,7 @@ const TEZGAH_FIYAT = {
 const VARSAYILAN_MUTFAK = {
   tur: 'mutfak', tip: 'mutfak', duzen: 'duz', kol: 'sol', W: 300, D: 62, dd: 62, H: 90,
   n: 0, mod: [], ustler: [], n2: 0, mod2: [], ustler2: [], batarya: true,
-  tezgah: 'kuvars', kalinlik: 3, onDekor: 'adacayi', kulp: 'profil', kulpRenk: 'siyah',
+  tezgah: 'kuvars', kalinlik: 3, onDekor: 'gece', kulp: 'profil', kulpRenk: 'pirinc',
   ust: true, panel: true, selale: false, lavabo: 'canak', lavaboSayi: 1, ayna: 'yok', asma: false,
 };
 const VARSAYILAN_BANYO = {
@@ -3797,7 +3826,7 @@ const EGIMLI_KAPAKLAR = [
 ];
 const VARSAYILAN_EGIMLI = {
   tur: 'egimli', W: 240, H: 230, Hk: 100, E: 150, D: 58, yon: 'sol', hat: 'premium', bolme: 4,
-  ic: ['raf', 'cekmece', 'aski', 'aski'], kapak: 'mentese', govdeDekor: 'beyaz', kapakDekor: 'kasmir',
+  ic: ['raf', 'cekmece', 'aski', 'aski'], kapak: 'mentese', govdeDekor: 'mese', kapakDekor: 'petrol',
   kulp: 'cubuk', kulpRenk: 'pirinc', baza: true,
 };
 const EGIM_KESIM = 900; // eğimli kesim ve özel kapak işçiliği (₺)
@@ -4512,6 +4541,10 @@ function konfAc(k, duzenlenen = null, tur = 'dolap') {
   $('odayaEkle').textContent = duzenlenen ? 'Değişiklikleri uygula' : 'Odaya ekle';
   $('kapakDugme').textContent = 'İçini göster';
   konf.sc.background = scene.background.clone();
+  // Telefonda küçük sahnede ölçü etiketleri kalabalık eder: kapalı başlar, müşteri isterse açar
+  konf.olcuGoster = !matchMedia('(max-width: 760px)').matches;
+  $('olcuDugme').classList.toggle('aktif', konf.olcuGoster);
+  $('olcuDugme').setAttribute('aria-pressed', konf.olcuGoster);
   konf.duvar.material.color.set(oda.duvar);
   $('konf').hidden = false;
   renderer.setAnimationLoop(null);
@@ -4527,6 +4560,7 @@ function konfAc(k, duzenlenen = null, tur = 'dolap') {
 }
 
 function konfKapat() {
+  tamEkran(false);
   $('konf').hidden = true;
   konf.r?.setAnimationLoop(null);
   tazele();
@@ -4586,6 +4620,22 @@ $('konfPanel').addEventListener('change', ev => { if (ev.target.dataset.olcu) ol
 $('konfGeri').onclick = () => adimaGit(konf.adim - 1);
 $('konfIleri').onclick = () => adimaGit(konf.adim + 1);
 $('konfKapat').onclick = konfKapat;
+// Tam ekran: destekleyen tarayıcıda (bilgisayar, Android) gerçek tam ekran; iPhone'da sayfa içinde tüm alanı kaplar
+function tamEkran(ac) {
+  if (ac === document.body.classList.contains('sahne-tam')) return;
+  document.body.classList.toggle('sahne-tam', ac);
+  $('tamEkran').textContent = ac ? '✕ Tasarıma dön' : 'Tam ekran';
+  $('tamEkran').setAttribute('aria-pressed', ac);
+  const el = document.documentElement;
+  if (ac && document.fullscreenEnabled && !document.fullscreenElement) el.requestFullscreen?.().catch(() => {});
+  if (!ac && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  // Yerleşim değişince model yeni sahne boyutuna göre yeniden çerçevelenir
+  requestAnimationFrame(() => { konfBoyut(); kameraGorus(konf.gorus); });
+}
+$('tamEkran').onclick = () => tamEkran(!document.body.classList.contains('sahne-tam'));
+// Tarayıcının kendi tam ekranından (Esc, geri hareketi) çıkılınca tasarıma dönülür
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) tamEkran(false); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('sahne-tam')) tamEkran(false); });
 document.querySelectorAll('[data-gorus]').forEach(b => { b.onclick = () => kameraGorus(b.dataset.gorus); });
 $('kapakDugme').onclick = () => {
   konf.kapakAcik = !konf.kapakAcik;
@@ -4632,9 +4682,11 @@ function dolapGorseli() {
 function tasarlaModunuBaslat() {
   document.body.classList.add('tasarla-modu');
   const site = window.parent !== window ? window.parent : null;
-  $('konfKapat').hidden = true;
+  // Telefonda tasarlayıcı mağazada tam ekran açılır; Kapat tasarlayıcı listesine döner
+  $('konfKapat').hidden = !site || !matchMedia('(max-width: 640px)').matches;
   const tur = new URLSearchParams(location.search).get('tur');
   konfAc(null, null, TURLER[tur] ? tur : 'dolap');
+  $('konfKapat').onclick = () => site.postMessage({ tip: 'tasarlaKapat' }, '*');
   $('odayaEkle').textContent = 'Odamda dene';
   $('odayaEkle').classList.remove('ana');
   $('konfSepet').classList.add('ana');

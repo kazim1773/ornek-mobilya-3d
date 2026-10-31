@@ -405,8 +405,13 @@
     footer.alt-bilgi .kap { grid-template-columns: minmax(0, 1fr); }
     .planlayici-cerceve iframe { height: 1100px; min-height: 0; }
     /* Tasarlayıcı, sabit başlık ve sekme şeridinin altında kalan ekrana sığar */
-    #tasarlaCerceve iframe { height: calc(100vh - var(--ust, 160px) - 72px); height: calc(100dvh - var(--ust, 160px) - 72px); min-height: 380px; }
-    #tasarlaCerceve { margin-bottom: 16px; }
+    /* Telefonda seçilen tasarlayıcı tam ekran açılır: başlık ve sekmeler gizlenir, tasarım alanı büyür */
+    body.tasarla-tam { overflow: hidden; }
+    body.tasarla-tam #tasarlaCerceve {
+      position: fixed; inset: 0; z-index: 200; margin: 0; border: 0; border-radius: 0;
+      padding-top: env(safe-area-inset-top); background: var(--surface);
+    }
+    body.tasarla-tam #tasarlaCerceve iframe { height: 100%; min-height: 0; }
   }
   @media (max-width: 860px) {
     .montaj-yapiskan::after { background: linear-gradient(0deg, rgba(231, 229, 223, 0.96) 0%, rgba(231, 229, 223, 0.8) 30%, rgba(231, 229, 223, 0) 52%); }
@@ -952,6 +957,7 @@ function tasarlaYukle(tur) {
   const src = `planlayici.html?mod=tasarla&tur=${tur}`;
   if (!tasarlaCerceve) {
     tasarlaCerceve = document.createElement('iframe');
+    tasarlaCerceve.allow = 'fullscreen';
     $('tasarlaCerceve').appendChild(tasarlaCerceve);
   }
   // Tür değişince tasarlayıcı yeniden açılır; aynı türe dönülürse yarım kalan tasarım korunur
@@ -1008,6 +1014,7 @@ addEventListener('message', e => {
   if (!e.data || e.origin !== location.origin) return;
   if (e.data.tip === 'sepetOzel' && tasarlaCerceve) { ozelSepeteEkle(e.data.urun); bildir(`${e.data.urun.ad} sepete eklendi`); return; }
   if (e.data.tip === 'ozelDene' && tasarlaCerceve) { planlayiciyaGonder({ tip: 'ozelEkle', dolap: e.data.dolap }, true); return; }
+  if (e.data.tip === 'tasarlaKapat') { location.hash = 'tasarla'; return; }
   if (!cerceve) return;
   if (e.data.tip === 'hazir') {
     planlayiciHazir = true;
@@ -1254,17 +1261,14 @@ function yonlendir() {
   document.querySelectorAll('nav.menu [data-yol]').forEach(a => a.classList.toggle('aktif', a.dataset.yol === yol.split('-')[0] || a.dataset.yol === yol));
   megaAc(false);
   scrollTo({ top: 0, behavior: 'instant' });
-  // Telefonda bir tasarlayıcı açılınca sekmeler başlığın hemen altına gelir; tasarlayıcı ekranı tam doldurur
-  if (gorunum === 'tasarla' && !$('tasarlaAlan').hidden && telefon.matches) {
-    requestAnimationFrame(() => scrollTo({ top: $('tasarlaSekmeler').getBoundingClientRect().top + scrollY - $('ustBaslik').offsetHeight - 8, behavior: 'instant' }));
-  }
+  tamEkranAyarla();
   montaj.yenile();
 }
-// Sabit başlığın yüksekliği: telefonda tasarlayıcı çerçevesi ekranın geri kalanına göre boyutlanır
+// Telefonda bir tasarlayıcı seçilince tam ekran açılır (ekran döndürülünce de yeniden değerlendirilir)
 const telefon = matchMedia('(max-width: 640px)');
-const ustOlc = () => document.documentElement.style.setProperty('--ust', $('ustBaslik').offsetHeight + 'px');
-addEventListener('resize', ustOlc);
-ustOlc();
+const tamEkranAyarla = () => document.body.classList.toggle('tasarla-tam',
+  telefon.matches && !$('tasarlaAlan').hidden && !document.querySelector('[data-gorunum="tasarla"]').hidden);
+telefon.addEventListener('change', tamEkranAyarla);
 addEventListener('hashchange', yonlendir);
 
 // ---------- Başlangıç ----------
