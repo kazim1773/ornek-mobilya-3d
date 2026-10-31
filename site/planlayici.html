@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Oda Planlayıcı</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   /* Yerleşim: solda ürün/oda paneli, sağda tam yükseklikte 3D sahne; dar ekranda sahne üstte, panel altta */
   :root {
@@ -178,6 +179,8 @@
   .adim:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   #konfSahne { position: relative; min-width: 0; min-height: 0; background: var(--scene); }
   #konfSahne canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  /* Düğmelerin telefon için kısa adları */
+  .kisa { display: none; }
   .konf-gorus { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
   .konf-gorus .btn { pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   /* Tam ekran: tasarım sürerken 3D sahne tek başına ekranı kaplar; panel ve fiyat çubuğu gizlenir, seçimler korunur */
@@ -252,14 +255,29 @@
   @media (max-width: 760px) {
     .konf-gorus { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
     .konf-gorus::-webkit-scrollbar { display: none; }
-    .konf-gorus .btn { flex: none; padding: 6px 10px; font-size: 12px; }
+    .konf-gorus { gap: 5px; left: 8px; right: 8px; top: 8px; }
+    .konf-gorus .btn { flex: none; padding: 6px 8px; font-size: 12px; }
+    .konf-gorus .uzun { display: none; }
+    .konf-gorus .kisa { display: inline; }
+    /* Adımlar: telefonda yalnızca seçili adımın adı yazar, diğerleri numarayla görünür */
+    .adim { padding: 9px 7px; }
+    .adim:not(.aktif) span { display: none; }
+    .adim:not(.aktif) i { margin-right: 0; }
     .olcu-etiket { padding: 1px 5px; font-size: 10px; }
     body.tasarla-modu .konf-ust { flex-wrap: nowrap; padding: 0 8px 0 0; gap: 6px; }
-    body.tasarla-modu #konfKapat { flex: none; padding: 6px 10px; font-size: 13px; }
+    body.tasarla-modu #konfKapat { flex: none; width: 34px; height: 34px; padding: 0; justify-content: center; font-size: 16px; }
     #tamEkran { order: -1; }
     body.tasarla-modu .konf-ust > div:first-child { display: none; }
     body.tasarla-modu .adimlar { order: 0; flex: 1; flex-basis: auto; }
-    body.tasarla-modu #konf { grid-template-rows: auto minmax(190px, 46%) minmax(0, 1fr) auto; }
+    body.tasarla-modu #konf { grid-template-rows: auto minmax(180px, 42%) minmax(0, 1fr) auto; }
+    /* Telefonda panel sıkı: başlık, açıklama ve ölçü satırları küçülür ki ölçülerin hepsi bir bakışta görünsün */
+    .konf-panel { padding: 10px 16px 16px; }
+    .konf-panel h3 { font-size: 15px; }
+    .konf-panel h4 { margin: 12px 0 6px; }
+    .konf-panel .aciklama { margin-bottom: 4px; font-size: 12px; line-height: 1.4; }
+    .olcu-kutu { margin-top: 8px; }
+    .olcu-satir { margin-top: 2px; }
+    .olcu-satir input[type=number] { width: 72px; padding-block: 6px; }
     body.tasarla-modu .konf-alt { gap: 6px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
     body.tasarla-modu .konf-alt .fiyat { flex-basis: 100%; display: flex; align-items: baseline; gap: 8px; }
     body.tasarla-modu .konf-alt .fiyat small { font-size: 11px; }
@@ -391,11 +409,11 @@
   <div id="konfSahne">
     <div class="konf-gorus">
       <button class="btn aktif" data-gorus="3d">3D</button>
-      <button class="btn" data-gorus="on">Önden</button>
-      <button class="btn" data-gorus="ust">Üstten</button>
-      <button class="btn" id="kapakDugme">İçini göster</button>
-      <button class="btn aktif" id="olcuDugme" aria-pressed="true">Ölçüler</button>
-      <button class="btn" id="tamEkran" aria-pressed="false">Tam ekran</button>
+      <button class="btn" data-gorus="on"><span class="uzun">Önden</span><span class="kisa">Ön</span></button>
+      <button class="btn" data-gorus="ust"><span class="uzun">Üstten</span><span class="kisa">Üst</span></button>
+      <button class="btn" id="kapakDugme"></button>
+      <button class="btn aktif" id="olcuDugme" aria-pressed="true"><span class="uzun">Ölçüler</span><span class="kisa">Ölçü</span></button>
+      <button class="btn" id="tamEkran" aria-pressed="false"></button>
     </div>
     <div id="olcuEtiketleri"></div>
     <div id="konfUyari"></div>
@@ -424,7 +442,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 // ---------- Ayarlar (her firma için değiştirilecek kısım) ----------
 const FIRMA_ADI = 'Örnek Mobilya';
-const DUVAR_RENKLERI = ['#f2efe9', '#e6ded1', '#dde4e8', '#ead9cf', '#d5dccb', '#cfd3d8'];
+const DUVAR_RENKLERI = ['#f2efe9', '#dccfbc', '#dde4e8', '#ead9cf', '#d5dccb', '#cfd3d8'];
 // Kumaş ürünlerde renk, modelin kendi dokusunun üzerine uygulanan bir ton olarak çalışır (beyaz = orijinal)
 const KUMAS_TONLARI = ['#ffffff', '#d9c7aa', '#b7c6d8', '#c3cfb3', '#dcb2a8', '#9a9a9a'];
 // Sol duvardaki pencere (metre)
@@ -490,7 +508,7 @@ gunes.shadow.normalBias = 0.02;
 scene.add(gunes, gunes.target);
 
 // ---------- Oda ----------
-const oda = { W: 4.5, L: 5, H: 2.7, zemin: 'acik', duvar: DUVAR_RENKLERI[0] };
+const oda = { W: 4.5, L: 5, H: 2.7, zemin: 'acik', duvar: DUVAR_RENKLERI[1] }; // açık bej: beyaz değil, mobilyalar öne çıkar
 const odaGrup = new THREE.Group();
 scene.add(odaGrup);
 const duvarMat = new THREE.MeshStandardMaterial({ color: oda.duvar, roughness: 0.95 });
@@ -1939,9 +1957,9 @@ function onSimge(id) {
 function komodinPanel(adim, k) {
   if (adim === 0) {
     return `<h3>Ölçülerini gir</h3><p class="aciklama">Dış ölçüler, ayaklar dahil. Yatak başı için yatak yüksekliğine yakın, 50–60 cm bir komodin önerilir.</p>
+      ${olcuHtml(k, [['W', 'Genişlik', KOMODIN_SINIR.W], ['H', 'Yükseklik', [Math.max(KOMODIN_SINIR.H[0], komodinAyakH(k) + 25), KOMODIN_SINIR.H[1]]], ['D', 'Derinlik', KOMODIN_SINIR.D]])}
       <h4>Hazır başlangıçlar</h4><div class="cipler">${KOMODIN_HAZIR.map((h, i) =>
-        `<button class="btn" data-ayar="hazir" data-deger="${i}">${h.ad} · ${h.k.W}×${h.k.H}</button>`).join('')}</div>
-      ${olcuHtml(k, [['W', 'Genişlik', KOMODIN_SINIR.W], ['H', 'Yükseklik', [Math.max(KOMODIN_SINIR.H[0], komodinAyakH(k) + 25), KOMODIN_SINIR.H[1]]], ['D', 'Derinlik', KOMODIN_SINIR.D]])}`;
+        `<button class="btn" data-ayar="hazir" data-deger="${i}">${h.ad} · ${h.k.W}×${h.k.H}</button>`).join('')}</div>`;
   }
   if (adim === 1) {
     const [kmin, kmax] = kolonAraligi(k.W);
@@ -4279,6 +4297,8 @@ function adimaGit(i) {
     b.classList.toggle('aktif', j === konf.adim);
     if (j === konf.adim) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
   });
+  const aktif = $('adimlar').children[konf.adim], serit = $('adimlar');
+  if (aktif) serit.scrollLeft = aktif.offsetLeft - serit.offsetLeft - (serit.clientWidth - aktif.offsetWidth) / 2;
   $('konfGeri').disabled = konf.adim === 0;
   $('konfIleri').hidden = konf.adim === T().adimlar.length - 1;
   kapaklariUygula();
@@ -4468,10 +4488,10 @@ function konfAc(k, duzenlenen = null, tur = 'dolap') {
   }
   konf.k = tanim.duzelt(structuredClone(k || taslak || tanim.varsayilan));
   Object.assign(konf, { duzenlenen, kapakAcik: false, kapakT: 0, seciliBolme: 0 });
-  $('adimlar').innerHTML = tanim.adimlar.map((a, i) => `<button class="adim" data-adim="${i}"><i>${i + 1}</i>${a}</button>`).join('');
+  $('adimlar').innerHTML = tanim.adimlar.map((a, i) => `<button class="adim" data-adim="${i}" title="${a}" aria-label="${i + 1}. ${a}"><i>${i + 1}</i><span>${a}</span></button>`).join('');
   $('konfBaslik').textContent = duzenlenen ? tanim.duzenBaslik : tanim.baslik;
   $('odayaEkle').textContent = duzenlenen ? 'Değişiklikleri uygula' : 'Odaya ekle';
-  $('kapakDugme').textContent = 'İçini göster';
+  kapakEtiketi();
   konf.sc.background = scene.background.clone();
   // Telefonda küçük sahnede ölçü etiketleri kalabalık eder: kapalı başlar, müşteri isterse açar
   konf.olcuGoster = !matchMedia('(max-width: 760px)').matches;
@@ -4490,6 +4510,11 @@ function konfAc(k, duzenlenen = null, tur = 'dolap') {
   // Sitenin içindeki sekmede odak verilmez: tarayıcı sayfayı çerçevenin altına kaydırıyordu
   if (!TASARLA_MODU) $('konfIleri').focus({ preventScroll: true });
 }
+
+// Uzun ve telefonda gösterilen kısa düğme adı
+const dugmeAdi = (uzun, kisa) => `<span class="uzun">${uzun}</span><span class="kisa">${kisa}</span>`;
+const kapakEtiketi = () => { $('kapakDugme').innerHTML = konf.kapakAcik ? dugmeAdi('İçini gizle', 'Kapağı kapa') : dugmeAdi('İçini göster', 'Kapağı aç'); };
+$('tamEkran').innerHTML = dugmeAdi('Tam ekran', 'Tam ekran');
 
 function konfKapat() {
   tamEkran(false);
@@ -4556,7 +4581,7 @@ $('konfKapat').onclick = konfKapat;
 function tamEkran(ac) {
   if (ac === document.body.classList.contains('sahne-tam')) return;
   document.body.classList.toggle('sahne-tam', ac);
-  $('tamEkran').textContent = ac ? '✕ Tasarıma dön' : 'Tam ekran';
+  $('tamEkran').innerHTML = ac ? dugmeAdi('✕ Tasarıma dön', '✕ Dön') : dugmeAdi('Tam ekran', 'Tam ekran');
   $('tamEkran').setAttribute('aria-pressed', ac);
   const el = document.documentElement;
   if (ac && document.fullscreenEnabled && !document.fullscreenElement) el.requestFullscreen?.().catch(() => {});
@@ -4571,7 +4596,7 @@ addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.class
 document.querySelectorAll('[data-gorus]').forEach(b => { b.onclick = () => kameraGorus(b.dataset.gorus); });
 $('kapakDugme').onclick = () => {
   konf.kapakAcik = !konf.kapakAcik;
-  $('kapakDugme').textContent = konf.kapakAcik ? 'İçini gizle' : 'İçini göster';
+  kapakEtiketi();
 };
 $('olcuDugme').onclick = () => {
   konf.olcuGoster = !konf.olcuGoster;
@@ -4619,6 +4644,8 @@ function tasarlaModunuBaslat() {
   const tur = new URLSearchParams(location.search).get('tur');
   konfAc(null, null, TURLER[tur] ? tur : 'dolap');
   $('konfKapat').onclick = () => site.postMessage({ tip: 'tasarlaKapat' }, '*');
+  $('konfKapat').textContent = '✕';
+  $('konfKapat').setAttribute('aria-label', 'Kapat');
   $('odayaEkle').textContent = 'Odamda dene';
   $('odayaEkle').classList.remove('ana');
   $('konfSepet').classList.add('ana');
